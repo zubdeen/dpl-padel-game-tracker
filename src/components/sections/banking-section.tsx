@@ -12,7 +12,7 @@ import {
   Circle,
   Minus
 } from "lucide-react"
-// import Image from "next/image"
+import { memo } from "react"
 
 // DPL Fee Structure
 const feeStructure = [
@@ -65,7 +65,7 @@ function StatusBadge({ status }: { status: PaymentStatus }) {
   )
 }
 
-export function BankingSection() {
+export const BankingSection = memo(function BankingSectionComponent() {
   return (
     <div className="space-y-4">
       {/* Header Section */}
@@ -270,4 +270,4 @@ export function BankingSection() {
       </SectionCard>
     </div>
   )
-}
+})

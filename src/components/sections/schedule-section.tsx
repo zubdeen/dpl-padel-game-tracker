@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, memo } from "react"
 import { SectionCard } from "@/components/SectionCard"
 import { teamLogos } from "@/lib/team-logos"
 import { Calendar, MapPin, Users, Trophy, ChevronDown } from "lucide-react"
@@ -289,7 +289,7 @@ function SittingOutBadges({ teams }: { teams: string[] }) {
   )
 }
 
-export function ScheduleSection() {
+export const ScheduleSection = memo(function ScheduleSectionComponent() {
   const [expandedNight, setExpandedNight] = useState<number | null>(1)
   const [expandedChampionship, setExpandedChampionship] = useState<string | null>("QUALIFIER")
   const [activePhase, setActivePhase] = useState<"league" | "championship">("league")
@@ -496,4 +496,4 @@ export function ScheduleSection() {
       </div>
     </SectionCard>
   )
-}
+})

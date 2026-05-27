@@ -1,5 +1,6 @@
 import { Shield, Star } from "lucide-react";
 import { SectionCard } from "@/components/SectionCard";
+import { memo, useMemo } from "react";
 import type { Player } from "@/lib/scoring";
 import { teamLogos } from "@/lib/team-logos";
 
@@ -15,30 +16,32 @@ const CATEGORY_ORDER: Record<string, number> = {
   Dev: 5,
 };
 
-export function TeamsSection({ players }: Props) {
-  const teams = new Map<string, Player[]>();
+export const TeamsSection = memo(function TeamsSectionComponent({ players }: Props) {
+  const teamList = useMemo(() => {
+    const teams = new Map<string, Player[]>();
 
-  for (const p of players) {
-    if (!p.team) continue;
+    for (const p of players) {
+      if (!p.team) continue;
 
-    if (!teams.has(p.team)) {
-      teams.set(p.team, []);
+      if (!teams.has(p.team)) {
+        teams.set(p.team, []);
+      }
+
+      teams.get(p.team)!.push(p);
     }
 
-    teams.get(p.team)!.push(p);
-  }
-
-  const teamList = [...teams.entries()]
-    .map(([name, list]) => ({
-      name,
-      players: list.sort(
-        (a, b) =>
-          (CATEGORY_ORDER[String(a.category)] ?? 99) -
-            (CATEGORY_ORDER[String(b.category)] ?? 99) ||
-          (a.ranking ?? 99) - (b.ranking ?? 99)
-      ),
-    }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+    return [...teams.entries()]
+      .map(([name, list]) => ({
+        name,
+        players: list.sort(
+          (a, b) =>
+            (CATEGORY_ORDER[String(a.category)] ?? 99) -
+              (CATEGORY_ORDER[String(b.category)] ?? 99) ||
+            (a.ranking ?? 99) - (b.ranking ?? 99)
+        ),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [players]);
 
   return (
       <SectionCard
@@ -111,4 +114,4 @@ export function TeamsSection({ players }: Props) {
         </div>
       </SectionCard>
   );
-}
+});

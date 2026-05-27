@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, memo } from "react";
 import { Users, Crown, Search } from "lucide-react";
 import { SectionCard } from "@/components/SectionCard";
 import {
@@ -37,7 +37,7 @@ function getInitials(name: string): string {
     .substring(0, 2);
 }
 
-export function PlayersSection({ players, matches }: Props) {
+export const PlayersSection = memo(function PlayersSectionComponent({ players, matches }: Props) {
   const standings = computePlayerStandings(players, matches);
 
   const [search, setSearch] = useState("");
@@ -253,4 +253,4 @@ export function PlayersSection({ players, matches }: Props) {
       </SectionCard>
     </div>
   );
-}
+});

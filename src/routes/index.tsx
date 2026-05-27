@@ -30,7 +30,12 @@ function Index() {
     teams: 0,
     fixtures: 0,
     admin: 0,
+    schedule: 0,
+    banking: 0,
+    rules: 0,
   });
+
+
 
   const players = useQuery<Player[]>({
     queryKey: ["players"],

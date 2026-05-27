@@ -79,7 +79,7 @@
   "name": "tanstack_start_ts",
   "private": true,
   "scripts": {
-    "build": "vite build",
+    "build": "tsc && vite build",
     "build:dev": "vite build --mode development",
     "dev": "vite dev",
     "format": "prettier --write .",

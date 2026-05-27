@@ -2,21 +2,22 @@ import { Trophy } from "lucide-react";
 import { SectionCard } from "@/components/SectionCard";
 import { computeTeamStandings, type Match, type Player } from "@/lib/scoring";
 import { dplLogo, teamLogos } from "@/lib/team-logos";
+import { memo, useMemo } from "react";
 
 interface Props {
   players: Player[];
   matches: Match[];
 }
 
-export function StandingsSection({ players, matches }: Props) {
-  const standings = computeTeamStandings(players, matches);
+export const StandingsSection = memo(function StandingsSectionComponent({ players, matches }: Props) {
+  const standings = useMemo(() => computeTeamStandings(players, matches), [players, matches]);
 
   return (
-      <div className="space-y-4">
-
-      <SectionCard className="py-6">
-  <div className="flex flex-col items-center text-center">
-    {/* DPL Logo */}
+    <div className="space-y-6">
+      {/* League header card */}
+      <SectionCard title="League Overview">
+        <div className="flex flex-col items-center text-center">
+          {/* DPL Logo */}
     <div className="w-28 h-28 mb-4">
       <img
         src={dplLogo}
@@ -162,4 +163,4 @@ export function StandingsSection({ players, matches }: Props) {
     </SectionCard>
     </div>
   );
-}
+});

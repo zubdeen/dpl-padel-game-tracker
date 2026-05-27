@@ -1,5 +1,6 @@
 import { Swords } from "lucide-react";
 import { SectionCard } from "@/components/SectionCard";
+import { memo, useMemo } from "react";
 import type { Match, Player } from "@/lib/scoring";
 
 interface Props {
@@ -7,8 +8,8 @@ interface Props {
   matches: Match[];
 }
 
-export function FixturesSection({ players, matches }: Props) {
-  const nameById = new Map(players.map((p) => [p.id, p.name]));
+export const FixturesSection = memo(function FixturesSectionComponent({ players, matches }: Props) {
+  const nameById = useMemo(() => new Map(players.map((p) => [p.id, p.name])), [players]);
 
   return (
     <SectionCard
@@ -89,4 +90,4 @@ export function FixturesSection({ players, matches }: Props) {
       </div>
     </SectionCard>
   );
-}
+});

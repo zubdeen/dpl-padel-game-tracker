@@ -1,5 +1,6 @@
 "use client"
 
+import { memo } from "react"
 import { SectionCard } from "@/components/SectionCard"
 import {
   Accordion,
@@ -719,7 +720,7 @@ const rulesData: RuleSection[] = [
   },
 ]
 
-export function RulesSection() {
+export const RulesSection = memo(function RulesSectionComponent() {
   return (
     <SectionCard
       title="Official Rulebook"
@@ -815,4 +816,4 @@ export function RulesSection() {
       </div>
     </SectionCard>
   )
-}
+})
