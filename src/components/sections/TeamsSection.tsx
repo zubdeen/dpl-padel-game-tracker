@@ -1,85 +1,114 @@
-import { Shield } from "lucide-react";
+import { Shield, Star } from "lucide-react";
 import { SectionCard } from "@/components/SectionCard";
-import { computeTeamStandings, type Match, type Player } from "@/lib/scoring";
+import type { Player } from "@/lib/scoring";
+import { teamLogos } from "@/lib/team-logos";
 
 interface Props {
   players: Player[];
-  matches: Match[];
 }
 
-function getInitials(name: string): string {
-  const parts = name.split(/[\s.]+/);
-  if (parts.length === 1) return name.substring(0, 2).toUpperCase();
-  return parts.map((p) => p[0]).join("").toUpperCase().substring(0, 2);
-}
+const CATEGORY_ORDER: Record<string, number> = {
+  M1: 1,
+  M2: 2,
+  Star: 3,
+  Core: 4,
+  Dev: 5,
+};
 
-export function TeamsSection({ players, matches }: Props) {
-  const teams = computeTeamStandings(players, matches);
+export function TeamsSection({ players }: Props) {
+  const teams = new Map<string, Player[]>();
+
+  for (const p of players) {
+    if (!p.team) continue;
+
+    if (!teams.has(p.team)) {
+      teams.set(p.team, []);
+    }
+
+    teams.get(p.team)!.push(p);
+  }
+
+  const teamList = [...teams.entries()]
+    .map(([name, list]) => ({
+      name,
+      players: list.sort(
+        (a, b) =>
+          (CATEGORY_ORDER[String(a.category)] ?? 99) -
+            (CATEGORY_ORDER[String(b.category)] ?? 99) ||
+          (a.ranking ?? 99) - (b.ranking ?? 99)
+      ),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <SectionCard
-      title="Pairs Played"
-      icon={<Shield className="h-3.5 w-3.5 text-primary/70" />}
-    >
-      <div className="space-y-3">
-        {teams.length === 0 && (
-          <p className="px-2 py-6 text-center text-[11px] text-muted-foreground">
-            No pairs yet — pairs appear after their first match.
-          </p>
-        )}
+      <SectionCard
+        title="Teams & Rosters"
+        icon={<Shield className="h-3.5 w-3.5 text-primary/70" />}
+      >
+        <div className="space-y-3">
+          {teamList.length === 0 && (
+            <p className="px-2 py-6 text-center text-[11px] text-muted-foreground">
+              No teams configured.
+            </p>
+          )}
 
-        {teams.map((team, index) => {
-          const isLeader = index === 0;
-          return (
+          {teamList.map((team) => (
             <div
-              key={team.key}
-              className={`rounded-xl p-3.5 transition-all duration-150 ${
-                isLeader
-                  ? "bg-gradient-to-br from-primary/12 to-primary/4 ring-1 ring-primary/20"
-                  : "bg-white/[0.02] ring-1 ring-white/[0.04]"
-              }`}
+              key={team.name}
+              className="rounded-xl p-3 bg-white/[0.02] ring-1 ring-white/[0.05]"
             >
-              <div className="flex items-center gap-3">
-                <div className="flex flex-col -space-y-2">
-                  {team.players.map((p) => (
-                    <div
-                      key={p.id}
-                      className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-800 ring-2 ring-card"
-                    >
-                      <span className="text-[9px] font-semibold text-foreground">
-                        {getInitials(p.name)}
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2.5">
+                  {teamLogos[team.name] ? (
+                    <div className="relative h-8 w-8 rounded-lg bg-zinc-900/80 ring-1 ring-white/[0.08] overflow-hidden flex-shrink-0">
+                      <img
+                        src={teamLogos[team.name]}
+                        alt={team.name}
+                        loading="lazy"
+                        decoding="async"
+                        className="object-contain p-0.5 w-full h-full"
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-8 w-8 rounded-lg bg-zinc-800/80 ring-1 ring-white/[0.08] flex items-center justify-center flex-shrink-0">
+                      <span className="text-[7px] font-bold text-muted-foreground">
+                        {team.name.substring(0, 2)}
                       </span>
                     </div>
-                  ))}
+                  )}
+                  <h3 className="text-[12px] font-bold uppercase tracking-wider text-foreground">
+                    {team.name}
+                  </h3>
                 </div>
 
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-foreground text-[13px] tracking-wide truncate">
-                    {team.players[0].name} &amp; {team.players[1].name}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    {team.matches} matches · {team.wins}W–{team.losses}L
-                  </p>
-                </div>
+                <span className="text-[9px] text-muted-foreground">
+                  {team.players.length} players
+                </span>
+              </div>
 
-                <div className="text-right">
-                  <p
-                    className={`text-lg font-bold tabular-nums ${
-                      isLeader ? "text-primary" : "text-foreground"
-                    }`}
+              <div className="space-y-1">
+                {team.players.map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between text-[11px]"
                   >
-                    {team.totalDelta > 0 ? "+" : ""}
-                    {team.totalDelta}
-                  </p>
-                  <p className="text-[8px] uppercase tracking-wider text-muted-foreground">
-                    Game Diff
-                  </p>
-                </div>
+                    <span className="text-foreground/90 flex items-center gap-1">
+                      {p.name}
+
+                      {p.is_captain ? (
+                        <Star className="h-3 w-3 text-primary fill-primary" />
+                      ) : null}
+                    </span>
+
+                    <span className="text-[9px] uppercase tracking-wider text-primary/70">
+                      {p.category ?? "—"}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
-          );
-        })}
-      </div>
-    </SectionCard>
+          ))}
+        </div>
+      </SectionCard>
   );
 }

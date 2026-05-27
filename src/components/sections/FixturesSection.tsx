@@ -38,7 +38,7 @@ export function FixturesSection({ players, matches }: Props) {
                   })}
                 </span>
                 <span className="text-[9px] font-semibold uppercase tracking-wider text-primary/70">
-                  Final
+                  {m.tie_breaker ? "Tiebreak" : "Final"}
                 </span>
               </div>
 

@@ -26,6 +26,7 @@ export type Database = {
           team2_games: number
           team2_player1_id: string
           team2_player2_id: string
+          tie_breaker: boolean
         }
         Insert: {
           created_at?: string
@@ -38,6 +39,7 @@ export type Database = {
           team2_games: number
           team2_player1_id: string
           team2_player2_id: string
+          tie_breaker?: boolean
         }
         Update: {
           created_at?: string
@@ -50,6 +52,7 @@ export type Database = {
           team2_games?: number
           team2_player1_id?: string
           team2_player2_id?: string
+          tie_breaker?: boolean
         }
         Relationships: [
           {
@@ -84,19 +87,31 @@ export type Database = {
       }
       players: {
         Row: {
+          category: string | null
           created_at: string
           id: string
+          is_captain: boolean
           name: string
+          ranking: number | null
+          team: string | null
         }
         Insert: {
+          category?: string | null
           created_at?: string
           id?: string
+          is_captain?: boolean
           name: string
+          ranking?: number | null
+          team?: string | null
         }
         Update: {
+          category?: string | null
           created_at?: string
           id?: string
+          is_captain?: boolean
           name?: string
+          ranking?: number | null
+          team?: string | null
         }
         Relationships: []
       }

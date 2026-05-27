@@ -8,6 +8,7 @@ import { GlobalFooter } from "@/components/GlobalFooter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -19,19 +20,26 @@ import { toast } from "sonner";
 import {
   Pencil,
   Trash2,
-  Plus,
-  X,
   ShieldCheck,
   Users,
   Swords,
   ArrowLeft,
   Crown,
+  Star,
 } from "lucide-react";
 import type { Match, Player } from "@/lib/scoring";
 
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
 });
+
+const CATEGORY_ORDER: Record<string, number> = {
+  M1: 1,
+  M2: 2,
+  Star: 3,
+  Core: 4,
+  Dev: 5,
+};
 
 function AdminPage() {
   const { user, isAdmin, loading } = useAuth();
@@ -72,12 +80,30 @@ function AdminPage() {
         <ClaimAdminCard />
       ) : (
         <div className="space-y-4">
-          <PlayersPanel />
+          <ViewAllPlayersCard />
           <MatchEntryPanel />
           <MatchListPanel />
         </div>
       )}
     </Shell>
+  );
+}
+
+function ViewAllPlayersCard() {
+  const navigate = useNavigate();
+
+  return (
+    <SectionCard
+      title="Tournament Roster"
+      icon={<Users className="h-4 w-4 text-primary" />}
+    >
+      <p className="text-[10px] text-muted-foreground leading-relaxed mb-3">
+        View the full player roster and team assignments on a dedicated page.
+      </p>
+      <Button className="w-full" onClick={() => navigate({ to: "/roster" })}>
+        View all players
+      </Button>
+    </SectionCard>
   );
 }
 
@@ -122,7 +148,6 @@ function ClaimAdminCard() {
     } else {
       toast.success("You are now the admin");
       qc.invalidateQueries();
-      // Force the auth hook to re-check the role
       window.location.reload();
     }
   };
@@ -140,18 +165,13 @@ function ClaimAdminCard() {
             The admin seat is already taken.
           </p>
           <p className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed">
-            This tournament allows exactly one admin. Sign in as that account
-            to manage matches.
+            This tournament allows exactly one admin.
           </p>
         </div>
       ) : (
         <div className="rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent ring-1 ring-primary/30 p-4 text-center space-y-3">
           <p className="text-[12px] text-foreground font-medium">
-            No admin has been claimed yet.
-          </p>
-          <p className="text-[10px] text-muted-foreground leading-relaxed">
-            Claim it now to take exclusive control of player and match
-            management. This action is one-time and permanent.
+            No admin claimed yet.
           </p>
           <Button onClick={claim} disabled={busy} className="w-full">
             {busy ? "Claiming…" : "Claim admin seat"}
@@ -168,10 +188,12 @@ function usePlayers() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("id, name")
+        .select("id, name, team, ranking, category, is_captain")
+        .order("team")
+        .order("ranking", { ascending: true, nullsFirst: false })
         .order("name");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as unknown as Player[];
     },
   });
 }
@@ -183,116 +205,126 @@ function useMatches() {
       const { data, error } = await supabase
         .from("matches")
         .select(
-          "id, team1_player1_id, team1_player2_id, team2_player1_id, team2_player2_id, team1_games, team2_games, played_at",
+          "id, team1_player1_id, team1_player2_id, team2_player1_id, team2_player2_id, team1_games, team2_games, tie_breaker, played_at",
         )
         .order("played_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as Match[];
+      return (data ?? []) as unknown as Match[];
     },
   });
 }
 
-function PlayersPanel() {
-  const qc = useQueryClient();
+function groupByTeam(players: Player[]) {
+  const map = new Map<string, Player[]>();
+  for (const p of players) {
+    const t = p.team ?? "Unassigned";
+    if (!map.has(t)) map.set(t, []);
+    map.get(t)!.push(p);
+  }
+  for (const list of map.values()) {
+    list.sort(
+      (a, b) =>
+        (CATEGORY_ORDER[String(a.category)] ?? 99) -
+          (CATEGORY_ORDER[String(b.category)] ?? 99) ||
+        (a.ranking ?? 99) - (b.ranking ?? 99),
+    );
+  }
+  return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+}
+
+function RosterPanel() {
   const players = usePlayers();
-  const [name, setName] = useState("");
-
-  const addPlayer = async () => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    const { error } = await supabase.from("players").insert({ name: trimmed });
-    if (error) toast.error(error.message);
-    else {
-      toast.success("Player added");
-      setName("");
-      qc.invalidateQueries({ queryKey: ["players"] });
-    }
-  };
-
-  const removePlayer = async (id: string) => {
-    if (!confirm("Delete this player?")) return;
-    const { error } = await supabase.from("players").delete().eq("id", id);
-    if (error) toast.error(error.message);
-    else {
-      toast.success("Player deleted");
-      qc.invalidateQueries({ queryKey: ["players"] });
-    }
-  };
+  const groups = groupByTeam(players.data ?? []);
 
   return (
     <SectionCard
-      title="Players"
+      title="Tournament Roster"
       icon={<Users className="h-4 w-4 text-primary" />}
     >
+      <p className="text-[10px] text-muted-foreground leading-relaxed mb-3">
+        Pre-configured teams, players, and rankings used for match entry below.
+      </p>
       <div className="space-y-3">
-        <div className="flex gap-2">
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Player name"
-            className="bg-white/[0.03] border-white/[0.06]"
-            onKeyDown={(e) => e.key === "Enter" && addPlayer()}
-          />
-          <Button onClick={addPlayer} size="sm">
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
-        <div className="rounded-xl bg-white/[0.02] ring-1 ring-white/[0.05] divide-y divide-white/[0.04]">
-          {(players.data ?? []).length === 0 && (
-            <p className="px-3 py-3 text-[11px] text-muted-foreground text-center">
-              No players yet.
-            </p>
-          )}
-          {(players.data ?? []).map((p) => (
-            <div
-              key={p.id}
-              className="flex items-center justify-between px-3 py-2"
-            >
-              <span className="text-[12px] text-foreground">{p.name}</span>
-              <button
-                onClick={() => removePlayer(p.id)}
-                className="text-muted-foreground hover:text-destructive transition-colors p-1"
-                aria-label="Delete player"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
+        {groups.length === 0 && (
+          <p className="text-[11px] text-muted-foreground text-center py-4">
+            No players configured.
+          </p>
+        )}
+        {groups.map(([team, list]) => (
+          <div
+            key={team}
+            className="rounded-xl bg-white/[0.02] ring-1 ring-white/[0.05] p-3"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-[12px] font-bold uppercase tracking-wider text-foreground">
+                {team}
+              </h3>
+              <span className="text-[9px] text-muted-foreground">
+                {list.length} players
+              </span>
             </div>
-          ))}
-        </div>
+            <div className="space-y-1">
+              {list.map((p) => (
+                <div
+                  key={p.id}
+                  className="flex items-center justify-between text-[11px]"
+                >
+                  <span className="text-foreground/90 flex items-center gap-1">
+                    {p.name}
+                    {p.is_captain ? (
+                      <Star className="h-3 w-3 text-primary fill-primary" />
+                    ) : null}
+                  </span>
+                  <span className="text-[9px] uppercase tracking-wider text-primary/70">
+                    {p.category ?? "—"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </SectionCard>
   );
 }
 
 type MatchForm = {
+  team1: string;
+  team2: string;
   team1_player1_id: string;
   team1_player2_id: string;
   team2_player1_id: string;
   team2_player2_id: string;
   team1_games: string;
   team2_games: string;
+  tie_breaker: boolean;
   played_at: string;
 };
 
 const emptyForm = (): MatchForm => ({
+  team1: "",
+  team2: "",
   team1_player1_id: "",
   team1_player2_id: "",
   team2_player1_id: "",
   team2_player2_id: "",
   team1_games: "",
   team2_games: "",
+  tie_breaker: false,
   played_at: new Date().toISOString().slice(0, 10),
 });
 
 function validateForm(f: MatchForm): string | null {
+  if (!f.team1 || !f.team2) return "Pick both teams.";
+  if (f.team1 === f.team2) return "Teams must be different.";
   const ids = [
     f.team1_player1_id,
     f.team1_player2_id,
     f.team2_player1_id,
     f.team2_player2_id,
   ];
-  if (ids.some((id) => !id)) return "Select all four players.";
-  if (new Set(ids).size !== 4) return "A player can't be on both teams.";
+  if (ids.some((id) => !id)) return "Select two players for each team.";
+  if (new Set(ids).size !== 4) return "A player can't be picked twice.";
   const g1 = parseInt(f.team1_games, 10);
   const g2 = parseInt(f.team2_games, 10);
   if (!Number.isFinite(g1) || !Number.isFinite(g2) || g1 < 0 || g2 < 0)
@@ -317,8 +349,9 @@ function MatchEntryPanel() {
       team2_player2_id: form.team2_player2_id,
       team1_games: parseInt(form.team1_games, 10),
       team2_games: parseInt(form.team2_games, 10),
+      tie_breaker: form.tie_breaker,
       played_at: new Date(form.played_at).toISOString(),
-    });
+    } as never);
     if (error) return toast.error(error.message);
     toast.success("Match recorded");
     setForm(emptyForm());
@@ -351,66 +384,141 @@ function MatchFormFields({
   setForm: (f: MatchForm) => void;
   players: Player[];
 }) {
-  const set = (k: keyof MatchForm, v: string) => setForm({ ...form, [k]: v });
+  const teams = useMemo(() => {
+    const s = new Set<string>();
+    for (const p of players) if (p.team) s.add(p.team);
+    return [...s].sort();
+  }, [players]);
+
+  const set = (patch: Partial<MatchForm>) => setForm({ ...form, ...patch });
+
+  const playersOnTeam = (team: string) =>
+    players
+      .filter((p) => p.team === team)
+      .sort(
+        (a, b) =>
+          (CATEGORY_ORDER[String(a.category)] ?? 99) -
+            (CATEGORY_ORDER[String(b.category)] ?? 99) ||
+          (a.ranking ?? 99) - (b.ranking ?? 99),
+      );
+
   return (
     <div className="space-y-3">
-      <PairBlock label="Team 1">
-        <PlayerSelect
-          value={form.team1_player1_id}
-          onChange={(v) => set("team1_player1_id", v)}
-          players={players}
-          exclude={[
-            form.team1_player2_id,
-            form.team2_player1_id,
-            form.team2_player2_id,
-          ]}
-        />
-        <PlayerSelect
-          value={form.team1_player2_id}
-          onChange={(v) => set("team1_player2_id", v)}
-          players={players}
-          exclude={[
-            form.team1_player1_id,
-            form.team2_player1_id,
-            form.team2_player2_id,
-          ]}
-        />
-      </PairBlock>
-      <PairBlock label="Team 2">
-        <PlayerSelect
-          value={form.team2_player1_id}
-          onChange={(v) => set("team2_player1_id", v)}
-          players={players}
-          exclude={[
-            form.team1_player1_id,
-            form.team1_player2_id,
-            form.team2_player2_id,
-          ]}
-        />
-        <PlayerSelect
-          value={form.team2_player2_id}
-          onChange={(v) => set("team2_player2_id", v)}
-          players={players}
-          exclude={[
-            form.team1_player1_id,
-            form.team1_player2_id,
-            form.team2_player1_id,
-          ]}
-        />
-      </PairBlock>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1.5">
+          <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            Team 1
+          </Label>
+          <Select
+            value={form.team1}
+            onValueChange={(v) =>
+              set({
+                team1: v,
+                team1_player1_id: "",
+                team1_player2_id: "",
+              })
+            }
+          >
+            <SelectTrigger className="bg-white/[0.03] border-white/[0.06] text-[12px]">
+              <SelectValue placeholder="Team" />
+            </SelectTrigger>
+            <SelectContent>
+              {teams
+                .filter((t) => t !== form.team2)
+                .map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {t}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            Team 2
+          </Label>
+          <Select
+            value={form.team2}
+            onValueChange={(v) =>
+              set({
+                team2: v,
+                team2_player1_id: "",
+                team2_player2_id: "",
+              })
+            }
+          >
+            <SelectTrigger className="bg-white/[0.03] border-white/[0.06] text-[12px]">
+              <SelectValue placeholder="Team" />
+            </SelectTrigger>
+            <SelectContent>
+              {teams
+                .filter((t) => t !== form.team1)
+                .map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {t}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {form.team1 ? (
+        <PairBlock label={`${form.team1} pair`}>
+          <PlayerSelect
+            value={form.team1_player1_id}
+            onChange={(v) => set({ team1_player1_id: v })}
+            players={playersOnTeam(form.team1)}
+            exclude={[form.team1_player2_id]}
+          />
+          <PlayerSelect
+            value={form.team1_player2_id}
+            onChange={(v) => set({ team1_player2_id: v })}
+            players={playersOnTeam(form.team1)}
+            exclude={[form.team1_player1_id]}
+          />
+        </PairBlock>
+      ) : null}
+
+      {form.team2 ? (
+        <PairBlock label={`${form.team2} pair`}>
+          <PlayerSelect
+            value={form.team2_player1_id}
+            onChange={(v) => set({ team2_player1_id: v })}
+            players={playersOnTeam(form.team2)}
+            exclude={[form.team2_player2_id]}
+          />
+          <PlayerSelect
+            value={form.team2_player2_id}
+            onChange={(v) => set({ team2_player2_id: v })}
+            players={playersOnTeam(form.team2)}
+            exclude={[form.team2_player1_id]}
+          />
+        </PairBlock>
+      ) : null}
 
       <div className="grid grid-cols-2 gap-2">
         <NumberField
           label="T1 games"
           value={form.team1_games}
-          onChange={(v) => set("team1_games", v)}
+          onChange={(v) => set({ team1_games: v })}
         />
         <NumberField
           label="T2 games"
           value={form.team2_games}
-          onChange={(v) => set("team2_games", v)}
+          onChange={(v) => set({ team2_games: v })}
         />
       </div>
+
+      <label className="flex items-center gap-2 rounded-xl bg-white/[0.02] ring-1 ring-white/[0.05] px-3 py-2 cursor-pointer">
+        <Checkbox
+          checked={form.tie_breaker}
+          onCheckedChange={(v) => set({ tie_breaker: v === true })}
+        />
+        <span className="text-[11px] text-foreground">
+          Match went to a tiebreak
+        </span>
+      </label>
 
       <div className="space-y-1.5">
         <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -419,7 +527,7 @@ function MatchFormFields({
         <Input
           type="date"
           value={form.played_at}
-          onChange={(e) => set("played_at", e.target.value)}
+          onChange={(e) => set({ played_at: e.target.value })}
           className="bg-white/[0.03] border-white/[0.06]"
         />
       </div>
@@ -480,9 +588,8 @@ function PlayerSelect({
   players: Player[];
   exclude: string[];
 }) {
-  const options = useMemo(
-    () => players.filter((p) => !exclude.includes(p.id) || p.id === value),
-    [players, exclude, value],
+  const options = players.filter(
+    (p) => !exclude.includes(p.id) || p.id === value,
   );
   return (
     <Select value={value} onValueChange={onChange}>
@@ -492,7 +599,7 @@ function PlayerSelect({
       <SelectContent>
         {options.map((p) => (
           <SelectItem key={p.id} value={p.id}>
-            {p.name}
+            {p.name} {p.category ? `· ${p.category}` : ""}
           </SelectItem>
         ))}
       </SelectContent>
@@ -506,17 +613,22 @@ function MatchListPanel() {
   const matches = useMatches();
   const [editing, setEditing] = useState<string | null>(null);
   const [form, setForm] = useState<MatchForm>(emptyForm);
-  const nameById = new Map((players.data ?? []).map((p) => [p.id, p.name]));
+  const playerById = new Map((players.data ?? []).map((p) => [p.id, p]));
 
   const startEdit = (m: Match) => {
+    const t1 = playerById.get(m.team1_player1_id)?.team ?? "";
+    const t2 = playerById.get(m.team2_player1_id)?.team ?? "";
     setEditing(m.id);
     setForm({
+      team1: t1,
+      team2: t2,
       team1_player1_id: m.team1_player1_id,
       team1_player2_id: m.team1_player2_id,
       team2_player1_id: m.team2_player1_id,
       team2_player2_id: m.team2_player2_id,
       team1_games: String(m.team1_games),
       team2_games: String(m.team2_games),
+      tie_breaker: !!m.tie_breaker,
       played_at: new Date(m.played_at).toISOString().slice(0, 10),
     });
   };
@@ -534,8 +646,9 @@ function MatchListPanel() {
         team2_player2_id: form.team2_player2_id,
         team1_games: parseInt(form.team1_games, 10),
         team2_games: parseInt(form.team2_games, 10),
+        tie_breaker: form.tie_breaker,
         played_at: new Date(form.played_at).toISOString(),
-      })
+      } as never)
       .eq("id", editing);
     if (error) return toast.error(error.message);
     toast.success("Match updated");
@@ -564,47 +677,56 @@ function MatchListPanel() {
             No matches yet.
           </p>
         )}
-        {(matches.data ?? []).map((m) => (
-          <div
-            key={m.id}
-            className="rounded-xl p-3 bg-white/[0.02] ring-1 ring-white/[0.04]"
-          >
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[9px] uppercase tracking-wider text-muted-foreground">
-                {new Date(m.played_at).toLocaleDateString()}
-              </span>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => startEdit(m)}
-                  className="text-muted-foreground hover:text-primary p-1"
-                  aria-label="Edit"
-                >
-                  <Pencil className="h-3 w-3" />
-                </button>
-                <button
-                  onClick={() => remove(m.id)}
-                  className="text-muted-foreground hover:text-destructive p-1"
-                  aria-label="Delete"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </button>
+        {(matches.data ?? []).map((m) => {
+          const t1 = playerById.get(m.team1_player1_id)?.team ?? "?";
+          const t2 = playerById.get(m.team2_player1_id)?.team ?? "?";
+          return (
+            <div
+              key={m.id}
+              className="rounded-xl p-3 bg-white/[0.02] ring-1 ring-white/[0.04]"
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[9px] uppercase tracking-wider text-muted-foreground">
+                  {new Date(m.played_at).toLocaleDateString()}
+                  {m.tie_breaker ? " · TB" : ""}
+                </span>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => startEdit(m)}
+                    className="text-muted-foreground hover:text-primary p-1"
+                    aria-label="Edit"
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </button>
+                  <button
+                    onClick={() => remove(m.id)}
+                    className="text-muted-foreground hover:text-destructive p-1"
+                    aria-label="Delete"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+              <div className="text-[11px] text-foreground">
+                <span className={m.team1_games > m.team2_games ? "font-bold" : ""}>
+                  {t1}
+                </span>
+                <span className="text-primary font-mono mx-2">
+                  {m.team1_games}–{m.team2_games}
+                </span>
+                <span className={m.team2_games > m.team1_games ? "font-bold" : ""}>
+                  {t2}
+                </span>
+              </div>
+              <div className="text-[9px] text-muted-foreground mt-0.5">
+                {playerById.get(m.team1_player1_id)?.name} &amp;{" "}
+                {playerById.get(m.team1_player2_id)?.name} vs{" "}
+                {playerById.get(m.team2_player1_id)?.name} &amp;{" "}
+                {playerById.get(m.team2_player2_id)?.name}
               </div>
             </div>
-            <div className="text-[11px] text-foreground">
-              <span className={m.team1_games > m.team2_games ? "font-bold" : ""}>
-                {nameById.get(m.team1_player1_id)} &amp;{" "}
-                {nameById.get(m.team1_player2_id)}
-              </span>
-              <span className="text-primary font-mono mx-2">
-                {m.team1_games}–{m.team2_games}
-              </span>
-              <span className={m.team2_games > m.team1_games ? "font-bold" : ""}>
-                {nameById.get(m.team2_player1_id)} &amp;{" "}
-                {nameById.get(m.team2_player2_id)}
-              </span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
 
         {editing && (
           <div className="mt-4 rounded-xl bg-white/[0.02] ring-1 ring-primary/20 p-3 space-y-3">

@@ -16,7 +16,7 @@ export function HeroSection({ playerCount, matchCount }: HeroSectionProps) {
       </div>
 
       <h1 className="text-2xl font-bold tracking-tight text-foreground mb-1">
-        <span className="text-primary">Padel</span> Tournament
+        <span className="text-primary">Diamond</span> Padel League
       </h1>
 
       <div className="inline-flex items-center gap-1.5 px-2.5 py-1 mt-2 mb-3 rounded-full bg-primary/10 border border-primary/20">

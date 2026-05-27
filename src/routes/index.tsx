@@ -10,6 +10,9 @@ import { StandingsSection } from "@/components/sections/StandingsSection";
 import { PlayersSection } from "@/components/sections/PlayersSection";
 import { TeamsSection } from "@/components/sections/TeamsSection";
 import { FixturesSection } from "@/components/sections/FixturesSection";
+import { BankingSection } from "@/components/sections/banking-section";
+import { ScheduleSection } from "@/components/sections/schedule-section";
+import { RulesSection } from "@/components/sections/rules-section";
 import type { Match, Player } from "@/lib/scoring";
 
 export const Route = createFileRoute("/")({
@@ -34,10 +37,12 @@ function Index() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("id, name")
+        .select("id, name, team, ranking, category, is_captain")
+        .order("team")
+        .order("ranking", { ascending: true, nullsFirst: false })
         .order("name");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as unknown as Player[];
     },
   });
 
@@ -47,11 +52,11 @@ function Index() {
       const { data, error } = await supabase
         .from("matches")
         .select(
-          "id, team1_player1_id, team1_player2_id, team2_player1_id, team2_player2_id, team1_games, team2_games, played_at",
+          "id, team1_player1_id, team1_player2_id, team2_player1_id, team2_player2_id, team1_games, team2_games, tie_breaker, played_at",
         )
         .order("played_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as Match[];
+      return (data ?? []) as unknown as Match[];
     },
   });
 
@@ -79,10 +84,17 @@ function Index() {
       case "players":
         return <PlayersSection players={ps} matches={ms} />;
       case "teams":
-        return <TeamsSection players={ps} matches={ms} />;
+        return <TeamsSection players={ps} />;
       case "fixtures":
         return <FixturesSection players={ps} matches={ms} />;
       case "standings":
+        return <StandingsSection players={ps} matches={ms} />;
+      case "banking":
+        return <BankingSection />;
+      case "schedule":
+        return <ScheduleSection />;
+      case "rules":
+        return <RulesSection />;
       default:
         return (
           <div className="space-y-4">

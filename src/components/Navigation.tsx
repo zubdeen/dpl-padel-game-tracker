@@ -1,6 +1,6 @@
-import { Trophy, Users, Users2, Swords, ShieldCheck } from "lucide-react";
+import { Trophy, Users, Users2, Swords, ShieldCheck, Calendar, Book, Wallet } from "lucide-react";
 
-export type TabId = "standings" | "players" | "teams" | "fixtures" | "admin";
+export type TabId = "standings" | "players" | "teams" | "fixtures" | "schedule" | "admin" | "banking" | "rules";
 
 interface NavItem {
   id: TabId;
@@ -13,6 +13,9 @@ const navItems: NavItem[] = [
   { id: "players", icon: Users, label: "Players" },
   { id: "teams", icon: Users2, label: "Teams" },
   { id: "fixtures", icon: Swords, label: "Fixtures" },
+  { id: "schedule", icon: Calendar, label: "Schedule" },
+  { id: "banking", icon: Wallet, label: "Banking" },
+  { id: "rules", icon: Book, label: "Rules" },
 ];
 
 interface NavigationProps {

@@ -1,11 +1,24 @@
 // Padel tournament scoring logic.
-// Rules (per product spec):
-//  - For each match: difference = team1_games - team2_games.
-//    Every player on team1 gets +difference; every player on team2 gets -difference.
-//  - Player score (shown on leaderboard) = sum(deltas) / matchesPlayedByPlayer.
-//  - Team (pair) score = cumulative sum of deltas for that exact pair.
+//
+// Team points (per match):
+//   - Winner gets 3 points; loser gets 0.
+//   - Bonus: if the winner wins 6–0, winner gets 4 instead of 3 (loser still 0).
+//   - If the match went to tiebreak: winner gets 2, loser gets 1.
+//
+// Player points (per match):
+//   - Each player on a team gets (team_games_for − team_games_against).
+//   - Total = sum across all the player's matches.
 
-export type Player = { id: string; name: string };
+export type PlayerCategory = "M1" | "M2" | "Star" | "Core" | "Dev";
+
+export type Player = {
+  id: string;
+  name: string;
+  team?: string | null;
+  ranking?: number | null;
+  category?: PlayerCategory | string | null;
+  is_captain?: boolean | null;
+};
 
 export type Match = {
   id: string;
@@ -15,6 +28,7 @@ export type Match = {
   team2_player2_id: string;
   team1_games: number;
   team2_games: number;
+  tie_breaker?: boolean | null;
   played_at: string;
 };
 
@@ -25,20 +39,31 @@ export type PlayerStanding = {
   losses: number;
   gamesFor: number;
   gamesAgainst: number;
-  totalDelta: number;
-  average: number; // totalDelta / matches
+  points: number; // sum of game differences
 };
 
 export type TeamStanding = {
-  key: string; // sorted "id1|id2"
-  players: [Player, Player];
+  team: string;
   matches: number;
   wins: number;
   losses: number;
-  totalDelta: number;
+  points: number;
+  gameDiff: number;
 };
 
-const pairKey = (a: string, b: string) => [a, b].sort().join("|");
+/**
+ * Award team points for a single match outcome.
+ * Returns [winnerPoints, loserPoints].
+ */
+export function teamPointsFor(
+  winnerGames: number,
+  loserGames: number,
+  tie_breaker: boolean,
+): [number, number] {
+if (tie_breaker) return [2, 1];
+  if (winnerGames >= 6 && loserGames === 0) return [4, 0];
+  return [3, 0];
+}
 
 export function computePlayerStandings(
   players: Player[],
@@ -58,8 +83,7 @@ export function computePlayerStandings(
         losses: 0,
         gamesFor: 0,
         gamesAgainst: 0,
-        totalDelta: 0,
-        average: 0,
+        points: 0,
       };
       acc.set(id, s);
     }
@@ -67,89 +91,93 @@ export function computePlayerStandings(
   };
 
   for (const m of matches) {
-    const delta = m.team1_games - m.team2_games;
-    const team1 = [m.team1_player1_id, m.team1_player2_id];
-    const team2 = [m.team2_player1_id, m.team2_player2_id];
+    const diff = m.team1_games - m.team2_games;
+    const t1 = [m.team1_player1_id, m.team1_player2_id];
+    const t2 = [m.team2_player1_id, m.team2_player2_id];
 
-    for (const pid of team1) {
+    for (const pid of t1) {
       const s = ensure(pid);
       s.matches += 1;
-      s.totalDelta += delta;
+      s.points += diff;
       s.gamesFor += m.team1_games;
       s.gamesAgainst += m.team2_games;
-      if (delta > 0) s.wins += 1;
-      else if (delta < 0) s.losses += 1;
+      if (diff > 0) s.wins += 1;
+      else if (diff < 0) s.losses += 1;
     }
-    for (const pid of team2) {
+    for (const pid of t2) {
       const s = ensure(pid);
       s.matches += 1;
-      s.totalDelta += -delta;
+      s.points += -diff;
       s.gamesFor += m.team2_games;
       s.gamesAgainst += m.team1_games;
-      if (-delta > 0) s.wins += 1;
-      else if (-delta < 0) s.losses += 1;
+      if (-diff > 0) s.wins += 1;
+      else if (-diff < 0) s.losses += 1;
     }
   }
 
-  // Include players with no matches so they appear at the bottom
   for (const p of players) ensure(p.id);
 
-  return [...acc.values()]
-    .map((s) => ({
-      ...s,
-      average: s.matches > 0 ? s.totalDelta / s.matches : 0,
-    }))
-    .sort(
-      (a, b) =>
-        b.average - a.average ||
-        b.totalDelta - a.totalDelta ||
-        b.wins - a.wins ||
-        a.player.name.localeCompare(b.player.name),
-    );
+  return [...acc.values()].sort(
+    (a, b) =>
+      b.points - a.points ||
+      b.wins - a.wins ||
+      a.player.name.localeCompare(b.player.name),
+  );
 }
 
 export function computeTeamStandings(
   players: Player[],
   matches: Match[],
 ): TeamStanding[] {
-  const byId = new Map(players.map((p) => [p.id, p]));
+  const teamById = new Map(players.map((p) => [p.id, p.team ?? null]));
   const acc = new Map<string, TeamStanding>();
 
-  const ensure = (a: string, b: string): TeamStanding => {
-    const key = pairKey(a, b);
-    let t = acc.get(key);
+  const ensure = (team: string): TeamStanding => {
+    let t = acc.get(team);
     if (!t) {
-      const pa = byId.get(a) ?? { id: a, name: "Unknown" };
-      const pb = byId.get(b) ?? { id: b, name: "Unknown" };
-      const pair = ([pa, pb].sort((x, y) => x.name.localeCompare(y.name))) as [
-        Player,
-        Player,
-      ];
-      t = { key, players: pair, matches: 0, wins: 0, losses: 0, totalDelta: 0 };
-      acc.set(key, t);
+      t = { team, matches: 0, wins: 0, losses: 0, points: 0, gameDiff: 0 };
+      acc.set(team, t);
     }
     return t;
   };
 
-  for (const m of matches) {
-    const delta = m.team1_games - m.team2_games;
-    const t1 = ensure(m.team1_player1_id, m.team1_player2_id);
-    t1.matches += 1;
-    t1.totalDelta += delta;
-    if (delta > 0) t1.wins += 1;
-    else if (delta < 0) t1.losses += 1;
+  // Seed every team that has players, so they show up before playing.
+  for (const p of players) if (p.team) ensure(p.team);
 
-    const t2 = ensure(m.team2_player1_id, m.team2_player2_id);
+  for (const m of matches) {
+    const team1 = teamById.get(m.team1_player1_id) ?? null;
+    const team2 = teamById.get(m.team2_player1_id) ?? null;
+    if (!team1 || !team2 || team1 === team2) continue;
+
+    const diff = m.team1_games - m.team2_games;
+    const t1 = ensure(team1);
+    const t2 = ensure(team2);
+    t1.matches += 1;
     t2.matches += 1;
-    t2.totalDelta += -delta;
-    if (-delta > 0) t2.wins += 1;
-    else if (-delta < 0) t2.losses += 1;
+    t1.gameDiff += diff;
+    t2.gameDiff += -diff;
+
+    const tb = !!m.tie_breaker;
+    if (diff > 0) {
+      const [wp, lp] = teamPointsFor(m.team1_games, m.team2_games, tb);
+      t1.points += wp;
+      t2.points += lp;
+      t1.wins += 1;
+      t2.losses += 1;
+    } else if (diff < 0) {
+      const [wp, lp] = teamPointsFor(m.team2_games, m.team1_games, tb);
+      t2.points += wp;
+      t1.points += lp;
+      t2.wins += 1;
+      t1.losses += 1;
+    }
   }
 
   return [...acc.values()].sort(
     (a, b) =>
-      b.totalDelta - a.totalDelta ||
+      b.points - a.points ||
+      b.gameDiff - a.gameDiff ||
       b.wins - a.wins ||
-      a.players[0].name.localeCompare(b.players[0].name),
+      a.team.localeCompare(b.team),
   );
 }
