@@ -2,11 +2,7 @@
   command = "npm run build"
   publish = "dist/client"
 
-[build.environment]
-  NODE_VERSION = "20"
-
-# Fix client-side routing (VERY important for React apps)
 [[redirects]]
   from = "/*"
-  to = "/index.html"
+  to = "/.netlify/functions/entry"
   status = 200
