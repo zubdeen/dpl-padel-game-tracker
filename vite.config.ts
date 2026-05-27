@@ -13,3 +13,7 @@ export default defineConfig({
     server: { entry: "server" },
   },
 });
+
+build: {
+  outDir: "dist/client"
+}
