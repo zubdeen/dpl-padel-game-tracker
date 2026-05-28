@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -17,7 +17,7 @@ export function GlobalFooter() {
             </button>
           ) : (
             <Link
-              to="/auth"
+              href="/auth"
               className="text-muted-foreground hover:text-primary transition-colors"
             >
               Admin sign in

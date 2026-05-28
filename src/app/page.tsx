@@ -1,5 +1,7 @@
-import { useState, useEffect, useRef, type ReactNode } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+"use client";
+
+import { useState, useRef, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -15,12 +17,8 @@ import { ScheduleSection } from "@/components/sections/schedule-section";
 import { RulesSection } from "@/components/sections/rules-section";
 import type { Match, Player } from "@/lib/scoring";
 
-export const Route = createFileRoute("/")({
-  component: Index,
-});
-
-function Index() {
-  const navigate = useNavigate();
+export default function Index() {
+  const router = useRouter();
   const { isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId>("standings");
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -67,7 +65,7 @@ function Index() {
 
   const handleTabChange = (newTab: TabId) => {
     if (newTab === "admin") {
-      navigate({ to: "/admin" });
+      router.push("/admin");
       return;
     }
     scrollPositions.current[activeTab] = window.scrollY;

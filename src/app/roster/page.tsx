@@ -1,4 +1,7 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+"use client";
+
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/hooks/use-auth'
@@ -9,10 +12,6 @@ import { Button } from '@/components/ui/button'
 import { Users, ArrowLeft, Star } from 'lucide-react'
 import type { Player } from '@/lib/scoring'
 
-export const Route = createFileRoute('/roster')({
-  component: RouteComponent,
-})
-
 const CATEGORY_ORDER: Record<string, number> = {
   M1: 1,
   M2: 2,
@@ -21,13 +20,13 @@ const CATEGORY_ORDER: Record<string, number> = {
   Dev: 5,
 }
 
-function RouteComponent() {
+export default function RosterPage() {
   const { user, isAdmin, loading } = useAuth()
-  const navigate = useNavigate()
+  const router = useRouter()
 
   useEffect(() => {
-    if (!loading && !user) navigate({ to: '/auth' })
-  }, [loading, user, navigate])
+    if (!loading && !user) router.push('/auth')
+  }, [loading, user, router])
 
   if (loading) {
     return (
@@ -51,7 +50,7 @@ function RouteComponent() {
           <p className="text-[11px] text-muted-foreground leading-relaxed mb-4">
             Roster management is restricted to the tournament administrator.
           </p>
-          <Button className="w-full" onClick={() => navigate({ to: '/admin' })}>
+          <Button className="w-full" onClick={() => router.push('/admin')}>
             Back to admin
           </Button>
         </SectionCard>
@@ -80,7 +79,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       <main className="w-full max-w-[420px] relative">
         <div className="px-5 pb-10 pt-8">
           <Link
-            to="/admin"
+            href="/admin"
             className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-primary mb-2"
           >
             <ArrowLeft className="h-3 w-3" /> Back to admin

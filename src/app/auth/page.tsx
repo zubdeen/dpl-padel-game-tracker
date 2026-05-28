@@ -1,4 +1,7 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -11,20 +14,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { ShieldCheck, ArrowLeft } from "lucide-react";
 
-export const Route = createFileRoute("/auth")({
-  component: AuthPage,
-});
-
-function AuthPage() {
-  const navigate = useNavigate();
+export default function AuthPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (user) navigate({ to: "/admin" });
-  }, [user, navigate]);
+    if (user) router.push("/admin");
+  }, [user, router]);
 
   const signIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +55,7 @@ function AuthPage() {
       <main className="w-full max-w-[420px] relative">
         <div className="px-5 pb-10 pt-8">
           <Link
-            to="/"
+            href="/"
             className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-primary mb-6"
           >
             <ArrowLeft className="h-3 w-3" /> Back to standings

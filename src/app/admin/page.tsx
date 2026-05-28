@@ -1,4 +1,7 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
@@ -29,10 +32,6 @@ import {
 } from "lucide-react";
 import type { Match, Player } from "@/lib/scoring";
 
-export const Route = createFileRoute("/admin")({
-  component: AdminPage,
-});
-
 const CATEGORY_ORDER: Record<string, number> = {
   M1: 1,
   M2: 2,
@@ -41,13 +40,13 @@ const CATEGORY_ORDER: Record<string, number> = {
   Dev: 5,
 };
 
-function AdminPage() {
+export default function AdminPage() {
   const { user, isAdmin, loading } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user) navigate({ to: "/auth" });
-  }, [loading, user, navigate]);
+    if (!loading && !user) router.push("/auth");
+  }, [loading, user, router]);
 
   if (loading) {
     return (
@@ -90,7 +89,7 @@ function AdminPage() {
 }
 
 function ViewAllPlayersCard() {
-  const navigate = useNavigate();
+  const router = useRouter();
 
   return (
     <SectionCard
@@ -100,7 +99,7 @@ function ViewAllPlayersCard() {
       <p className="text-[10px] text-muted-foreground leading-relaxed mb-3">
         View the full player roster and team assignments on a dedicated page.
       </p>
-      <Button className="w-full" onClick={() => navigate({ to: "/roster" })}>
+      <Button className="w-full" onClick={() => router.push("/roster")}>
         View all players
       </Button>
     </SectionCard>
@@ -113,7 +112,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       <main className="w-full max-w-[420px] relative">
         <div className="px-5 pb-10 pt-8">
           <Link
-            to="/"
+            href="/"
             className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-primary mb-2"
           >
             <ArrowLeft className="h-3 w-3" /> Back to standings
