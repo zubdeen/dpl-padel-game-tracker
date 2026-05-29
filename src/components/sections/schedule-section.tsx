@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, memo } from "react"
+import { useEffect, useState, memo } from "react"
 import { SectionCard } from "@/components/SectionCard"
 import { teamLogos } from "@/lib/team-logos"
-import { Calendar, MapPin, Users, Trophy, ChevronDown } from "lucide-react"
+import { Calendar, MapPin, Users, Trophy, ChevronDown, Youtube, ExternalLink } from "lucide-react"
 
 interface CourtMatch {
   court: number
@@ -14,6 +14,7 @@ interface CourtMatch {
 interface MatchNight {
   night: number
   date: string
+  dateKey: string
   day: string
   time: string
   courts: CourtMatch[]
@@ -25,6 +26,7 @@ const leaguePhaseData: MatchNight[] = [
   {
     night: 1,
     date: "27 MAY",
+    dateKey: "2026-05-27",
     day: "WED",
     time: "18:00",
     courts: [
@@ -36,6 +38,7 @@ const leaguePhaseData: MatchNight[] = [
   {
     night: 2,
     date: "30 MAY",
+    dateKey: "2026-05-30",
     day: "SAT",
     time: "18:00",
     courts: [
@@ -47,6 +50,7 @@ const leaguePhaseData: MatchNight[] = [
   {
     night: 3,
     date: "03 JUN",
+    dateKey: "2026-06-03",
     day: "WED",
     time: "18:00",
     courts: [
@@ -58,6 +62,7 @@ const leaguePhaseData: MatchNight[] = [
   {
     night: 4,
     date: "05 JUN",
+    dateKey: "2026-06-05",
     day: "FRI",
     time: "18:00",
     courts: [
@@ -69,6 +74,7 @@ const leaguePhaseData: MatchNight[] = [
   {
     night: 5,
     date: "10 JUN",
+    dateKey: "2026-06-10",
     day: "WED",
     time: "18:00",
     courts: [
@@ -80,6 +86,7 @@ const leaguePhaseData: MatchNight[] = [
   {
     night: 6,
     date: "14 JUN",
+    dateKey: "2026-06-14",
     day: "SUN",
     time: "18:00",
     courts: [
@@ -91,6 +98,7 @@ const leaguePhaseData: MatchNight[] = [
   {
     night: 7,
     date: "17 JUN",
+    dateKey: "2026-06-17",
     day: "WED",
     time: "18:00",
     courts: [
@@ -102,6 +110,7 @@ const leaguePhaseData: MatchNight[] = [
   {
     night: 8,
     date: "19 JUN",
+    dateKey: "2026-06-19",
     day: "FRI",
     time: "18:00",
     courts: [
@@ -123,6 +132,7 @@ interface ChampionshipMatch {
 interface ChampionshipRound {
   name: string
   date: string
+  dateKey: string
   day: string
   time: string
   matches: ChampionshipMatch[]
@@ -134,6 +144,7 @@ const championshipPhaseData: ChampionshipRound[] = [
   {
     name: "QUALIFIER",
     date: "20 JUN",
+    dateKey: "2026-06-20",
     day: "SAT",
     time: "18:00",
     matches: [
@@ -144,6 +155,7 @@ const championshipPhaseData: ChampionshipRound[] = [
   {
     name: "ELIMINATOR",
     date: "24 JUN",
+    dateKey: "2026-06-24",
     day: "WED",
     time: "18:00",
     matches: [
@@ -155,6 +167,7 @@ const championshipPhaseData: ChampionshipRound[] = [
   {
     name: "SEMIFINAL",
     date: "26 JUN",
+    dateKey: "2026-06-26",
     day: "FRI",
     time: "18:00",
     matches: [
@@ -166,6 +179,7 @@ const championshipPhaseData: ChampionshipRound[] = [
   {
     name: "GRAND FINALS",
     date: "27 JUN",
+    dateKey: "2026-06-27",
     day: "SAT",
     time: "18:00",
     matches: [
@@ -176,6 +190,51 @@ const championshipPhaseData: ChampionshipRound[] = [
     sittingOut: [],
   },
 ]
+
+const streamLinks = [
+  { court: "Court 1", href: "https://www.youtube.com/@DPLBOTSWANA" },
+  { court: "Court 2", href: "https://www.youtube.com/@dplcourt2" },
+]
+
+function hasScheduleEnded(dateKey: string) {
+  const endOfMatchDate = new Date(`${dateKey}T23:59:59+02:00`)
+  return Date.now() > endOfMatchDate.getTime()
+}
+
+function getInitialLeagueNight() {
+  return leaguePhaseData.find((matchNight) => !hasScheduleEnded(matchNight.dateKey))?.night ?? leaguePhaseData.at(-1)?.night ?? null
+}
+
+function getInitialChampionshipRound() {
+  return championshipPhaseData.find((round) => !hasScheduleEnded(round.dateKey))?.name ?? championshipPhaseData.at(-1)?.name ?? null
+}
+
+function StreamLinks() {
+  return (
+    <div className="rounded-xl p-3 bg-zinc-900/50 ring-1 ring-white/[0.04]">
+      <div className="flex items-center gap-1.5 mb-2.5">
+        <Youtube className="h-3.5 w-3.5 text-primary/70" />
+        <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/80">
+          Live Streams
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {streamLinks.map((stream) => (
+          <a
+            key={stream.court}
+            href={stream.href}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center justify-center gap-1.5 rounded-lg bg-zinc-800/40 px-2.5 py-2 text-[10px] font-semibold text-foreground ring-1 ring-white/[0.05] transition-colors hover:bg-white/[0.05] hover:text-primary"
+          >
+            <span>{stream.court}</span>
+            <ExternalLink className="h-3 w-3 text-primary/70" />
+          </a>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 function TeamLogo({ team, size = "md" }: { team: string; size?: "sm" | "md" | "lg" }) {
   const sizeClasses = {
@@ -207,10 +266,10 @@ function TeamLogo({ team, size = "md" }: { team: string; size?: "sm" | "md" | "l
   )
 }
 
-function MatchCard({ homeTeam, awayTeam, court }: { homeTeam: string | null; awayTeam: string | null; court?: number }) {
+function MatchCard({ homeTeam, awayTeam, court, ended = false }: { homeTeam: string | null; awayTeam: string | null; court?: number; ended?: boolean }) {
   if (!homeTeam || !awayTeam) {
     return (
-      <div className="rounded-xl p-3 bg-zinc-800/20 ring-1 ring-white/[0.03]">
+      <div className={`rounded-xl p-3 bg-zinc-800/20 ring-1 ring-white/[0.03] ${ended ? "opacity-55" : ""}`}>
         <div className="flex items-center gap-1.5 mb-2">
           <MapPin className="h-3 w-3 text-muted-foreground/40" />
           <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50">
@@ -223,20 +282,27 @@ function MatchCard({ homeTeam, awayTeam, court }: { homeTeam: string | null; awa
   }
 
   return (
-    <div className="rounded-xl p-3 bg-zinc-800/30 ring-1 ring-white/[0.04]">
+    <div className={`rounded-xl p-3 bg-zinc-800/30 ring-1 ring-white/[0.04] ${ended ? "opacity-60" : ""}`}>
       {court && (
-        <div className="flex items-center gap-1.5 mb-3">
-          <MapPin className="h-3 w-3 text-primary/60" />
-          <span className="text-[9px] font-semibold uppercase tracking-widest text-primary/70">
-            Court {court}
-          </span>
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-1.5">
+            <MapPin className="h-3 w-3 text-primary/60" />
+            <span className="text-[9px] font-semibold uppercase tracking-widest text-primary/70">
+              Court {court}
+            </span>
+          </div>
+          {ended && (
+            <span className="rounded-md bg-zinc-800/70 px-1.5 py-0.5 text-[7px] font-semibold uppercase tracking-widest text-muted-foreground ring-1 ring-white/[0.05]">
+              Ended
+            </span>
+          )}
         </div>
       )}
 
       <div className="flex items-center justify-between">
         <div className="flex flex-col items-center gap-1.5 flex-1">
           <TeamLogo team={homeTeam} size="md" />
-          <span className="text-[9px] font-semibold text-foreground text-center leading-tight max-w-[70px]">
+          <span className={`text-[9px] font-semibold text-foreground text-center leading-tight max-w-[70px] ${ended ? "line-through decoration-primary/60" : ""}`}>
             {homeTeam}
           </span>
         </div>
@@ -249,7 +315,7 @@ function MatchCard({ homeTeam, awayTeam, court }: { homeTeam: string | null; awa
 
         <div className="flex flex-col items-center gap-1.5 flex-1">
           <TeamLogo team={awayTeam} size="md" />
-          <span className="text-[9px] font-semibold text-foreground text-center leading-tight max-w-[70px]">
+          <span className={`text-[9px] font-semibold text-foreground text-center leading-tight max-w-[70px] ${ended ? "line-through decoration-primary/60" : ""}`}>
             {awayTeam}
           </span>
         </div>
@@ -290,9 +356,24 @@ function SittingOutBadges({ teams }: { teams: string[] }) {
 }
 
 export const ScheduleSection = memo(function ScheduleSectionComponent() {
-  const [expandedNight, setExpandedNight] = useState<number | null>(1)
-  const [expandedChampionship, setExpandedChampionship] = useState<string | null>("QUALIFIER")
+  const [expandedNight, setExpandedNight] = useState<number | null>(getInitialLeagueNight)
+  const [expandedChampionship, setExpandedChampionship] = useState<string | null>(getInitialChampionshipRound)
   const [activePhase, setActivePhase] = useState<"league" | "championship">("league")
+
+  useEffect(() => {
+    if (activePhase === "league" && expandedNight != null) {
+      const currentNight = leaguePhaseData.find((matchNight) => matchNight.night === expandedNight)
+      if (currentNight && hasScheduleEnded(currentNight.dateKey)) {
+        setExpandedNight(getInitialLeagueNight())
+      }
+    }
+    if (activePhase === "championship" && expandedChampionship != null) {
+      const currentRound = championshipPhaseData.find((round) => round.name === expandedChampionship)
+      if (currentRound && hasScheduleEnded(currentRound.dateKey)) {
+        setExpandedChampionship(getInitialChampionshipRound())
+      }
+    }
+  }, [activePhase, expandedNight, expandedChampionship])
 
   return (
     <SectionCard
@@ -324,6 +405,8 @@ export const ScheduleSection = memo(function ScheduleSectionComponent() {
           </button>
         </div>
 
+        <StreamLinks />
+
         {/* League Phase */}
         {activePhase === "league" && (
           <div className="space-y-2.5">
@@ -334,10 +417,13 @@ export const ScheduleSection = memo(function ScheduleSectionComponent() {
               <p className="text-[9px] text-muted-foreground mt-0.5">8 Match Nights | 27 May - 19 Jun</p>
             </div>
 
-            {leaguePhaseData.map((matchNight) => (
+            {leaguePhaseData.map((matchNight) => {
+              const ended = hasScheduleEnded(matchNight.dateKey)
+
+              return (
               <div
                 key={matchNight.night}
-                className="rounded-2xl overflow-hidden ring-1 ring-white/[0.06] bg-zinc-900/40"
+                className={`rounded-2xl overflow-hidden ring-1 ring-white/[0.06] bg-zinc-900/40 ${ended ? "opacity-75" : ""}`}
               >
                 <button
                   onClick={() => setExpandedNight(expandedNight === matchNight.night ? null : matchNight.night)}
@@ -348,7 +434,7 @@ export const ScheduleSection = memo(function ScheduleSectionComponent() {
                       <span className="text-[10px] font-bold text-primary">{matchNight.night}</span>
                     </div>
                     <div className="text-left">
-                      <p className="text-[10px] font-bold text-foreground uppercase tracking-wide">
+                      <p className={`text-[10px] font-bold text-foreground uppercase tracking-wide ${ended ? "line-through decoration-primary/60" : ""}`}>
                         Night {matchNight.night}
                       </p>
                       <p className="text-[9px] text-muted-foreground">
@@ -356,6 +442,11 @@ export const ScheduleSection = memo(function ScheduleSectionComponent() {
                       </p>
                     </div>
                   </div>
+                  {ended && (
+                    <span className="mr-2 rounded-md bg-zinc-800/70 px-1.5 py-0.5 text-[7px] font-semibold uppercase tracking-widest text-muted-foreground ring-1 ring-white/[0.05]">
+                      Ended
+                    </span>
+                  )}
                   <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${expandedNight === matchNight.night ? "rotate-180" : ""}`} />
                 </button>
 
@@ -367,13 +458,15 @@ export const ScheduleSection = memo(function ScheduleSectionComponent() {
                         homeTeam={court.homeTeam}
                         awayTeam={court.awayTeam}
                         court={court.court}
+                        ended={ended}
                       />
                     ))}
                     <SittingOutBadges teams={matchNight.sittingOut} />
                   </div>
                 )}
               </div>
-            ))}
+              )
+            })}
           </div>
         )}
 
@@ -390,10 +483,13 @@ export const ScheduleSection = memo(function ScheduleSectionComponent() {
               <p className="text-[9px] text-muted-foreground">Finals Week | 20 - 27 Jun</p>
             </div>
 
-            {championshipPhaseData.map((round) => (
+            {championshipPhaseData.map((round) => {
+              const ended = hasScheduleEnded(round.dateKey)
+
+              return (
               <div
                 key={round.name}
-                className="rounded-2xl overflow-hidden ring-1 ring-white/[0.06] bg-zinc-900/40"
+                className={`rounded-2xl overflow-hidden ring-1 ring-white/[0.06] bg-zinc-900/40 ${ended ? "opacity-75" : ""}`}
               >
                 <button
                   onClick={() => setExpandedChampionship(expandedChampionship === round.name ? null : round.name)}
@@ -416,7 +512,7 @@ export const ScheduleSection = memo(function ScheduleSectionComponent() {
                       </span>
                     </div>
                     <div className="text-left">
-                      <p className="text-[10px] font-bold text-foreground uppercase tracking-wide">
+                      <p className={`text-[10px] font-bold text-foreground uppercase tracking-wide ${ended ? "line-through decoration-primary/60" : ""}`}>
                         {round.name}
                       </p>
                       <p className="text-[9px] text-muted-foreground">
@@ -424,13 +520,18 @@ export const ScheduleSection = memo(function ScheduleSectionComponent() {
                       </p>
                     </div>
                   </div>
+                  {ended && (
+                    <span className="mr-2 rounded-md bg-zinc-800/70 px-1.5 py-0.5 text-[7px] font-semibold uppercase tracking-widest text-muted-foreground ring-1 ring-white/[0.05]">
+                      Ended
+                    </span>
+                  )}
                   <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${expandedChampionship === round.name ? "rotate-180" : ""}`} />
                 </button>
 
                 {expandedChampionship === round.name && (
                   <div className="px-2.5 pb-2.5 space-y-2">
                     {round.matches.map((match) => (
-                      <div key={match.id} className="rounded-xl p-3 bg-zinc-800/30 ring-1 ring-white/[0.04]">
+                      <div key={match.id} className={`rounded-xl p-3 bg-zinc-800/30 ring-1 ring-white/[0.04] ${ended ? "opacity-60" : ""}`}>
                         <div className="flex items-center gap-1.5 mb-2.5">
                           <div className={`px-1.5 py-0.5 rounded ${
                             match.label === "FINAL"
@@ -451,7 +552,7 @@ export const ScheduleSection = memo(function ScheduleSectionComponent() {
                         <div className="flex items-center justify-between">
                           <div className="flex flex-col items-center gap-1.5 flex-1">
                             <TeamLogo team={match.homeTeam} size="md" />
-                            <span className="text-[9px] font-semibold text-foreground text-center">
+                            <span className={`text-[9px] font-semibold text-foreground text-center ${ended ? "line-through decoration-primary/60" : ""}`}>
                               {match.homeTeam}
                             </span>
                           </div>
@@ -468,7 +569,7 @@ export const ScheduleSection = memo(function ScheduleSectionComponent() {
 
                           <div className="flex flex-col items-center gap-1.5 flex-1">
                             <TeamLogo team={match.awayTeam} size="md" />
-                            <span className="text-[9px] font-semibold text-foreground text-center">
+                            <span className={`text-[9px] font-semibold text-foreground text-center ${ended ? "line-through decoration-primary/60" : ""}`}>
                               {match.awayTeam}
                             </span>
                           </div>
@@ -479,7 +580,8 @@ export const ScheduleSection = memo(function ScheduleSectionComponent() {
                   </div>
                 )}
               </div>
-            ))}
+              )
+            })}
 
             {/* Awards Note */}
             <div className="rounded-xl p-3 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent ring-1 ring-primary/20">

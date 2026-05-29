@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Providers } from "./providers";
 import "../styles.css";
+import { dplLogo } from "@/lib/team-logos";
 
 export const metadata: Metadata = {
   title: "DPL App",
@@ -13,6 +14,11 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary",
+  },
+  icons: {
+    icon: dplLogo,
+    shortcut: dplLogo,
+    apple: dplLogo,
   },
 };
 
