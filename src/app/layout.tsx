@@ -4,12 +4,12 @@ import "../styles.css";
 import { dplLogo } from "@/lib/team-logos";
 
 export const metadata: Metadata = {
-  title: "DPL App",
-  description: "DPL Generated Project",
+  title: "DPL",
+  description: "DPL Built Project",
   authors: [{ name: "DPL" }],
   openGraph: {
-    title: "DPL App",
-    description: "DPL Generated Project",
+    title: "DPL",
+    description: "DPL Built Project",
     type: "website",
   },
   twitter: {

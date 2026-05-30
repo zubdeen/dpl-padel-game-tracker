@@ -14,7 +14,7 @@ export type Database = {
   }
   public: {
     Tables: {
-      matches: {
+      eliminator_matches: {
         Row: {
           created_at: string
           created_by: string | null
@@ -26,7 +26,6 @@ export type Database = {
           team2_games: number
           team2_player1_id: string
           team2_player2_id: string
-          tie_breaker: boolean
         }
         Insert: {
           created_at?: string
@@ -39,7 +38,6 @@ export type Database = {
           team2_games: number
           team2_player1_id: string
           team2_player2_id: string
-          tie_breaker?: boolean
         }
         Update: {
           created_at?: string
@@ -50,6 +48,82 @@ export type Database = {
           team1_player1_id?: string
           team1_player2_id?: string
           team2_games?: number
+          team2_player1_id?: string
+          team2_player2_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eliminator_matches_team1_player1_id_fkey"
+            columns: ["team1_player1_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eliminator_matches_team1_player2_id_fkey"
+            columns: ["team1_player2_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eliminator_matches_team2_player1_id_fkey"
+            columns: ["team2_player1_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eliminator_matches_team2_player2_id_fkey"
+            columns: ["team2_player2_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      matches: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          played_at: string
+          team1_games: number
+          team1_name: string | null
+          team1_player1_id: string
+          team1_player2_id: string
+          team2_games: number
+          team2_name: string | null
+          team2_player1_id: string
+          team2_player2_id: string
+          tie_breaker: boolean
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          played_at?: string
+          team1_games: number
+          team1_name?: string | null
+          team1_player1_id: string
+          team1_player2_id: string
+          team2_games: number
+          team2_name?: string | null
+          team2_player1_id: string
+          team2_player2_id: string
+          tie_breaker?: boolean
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          played_at?: string
+          team1_games?: number
+          team1_name?: string | null
+          team1_player1_id?: string
+          team1_player2_id?: string
+          team2_games?: number
+          team2_name?: string | null
           team2_player1_id?: string
           team2_player2_id?: string
           tie_breaker?: boolean

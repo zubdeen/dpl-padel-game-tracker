@@ -1,19 +1,25 @@
 import { useMemo, useState, memo } from "react";
 import { Users, Crown, Search } from "lucide-react";
 import { SectionCard } from "@/components/SectionCard";
-import {
-  computePlayerStandings,
-  type Match,
-  type Player,
-} from "@/lib/scoring";
+import { computePlayerStandings, type Match, type Player } from "@/lib/scoring";
+import type { EliminatorMatch } from "@/lib/eliminators";
 import { teamLogos } from "@/lib/team-logos";
 
 interface Props {
   players: Player[];
   matches: Match[];
+  eliminatorMatches?: EliminatorMatch[];
 }
 
 const CATEGORY_ORDER = ["M1", "M2", "Star", "Core", "Dev"];
+const CATEGORIES = [
+  { id: "all", label: "All" },
+  { id: "M1", label: "M1" },
+  { id: "M2", label: "M2" },
+  { id: "Star", label: "Star" },
+  { id: "Core", label: "Core" },
+  { id: "Dev", label: "Dev" },
+];
 
 const CATEGORY_COLORS: Record<string, string> = {
   M1: "from-yellow-500/15 to-transparent ring-yellow-500/30",
@@ -37,53 +43,51 @@ function getInitials(name: string): string {
     .substring(0, 2);
 }
 
-export const PlayersSection = memo(function PlayersSectionComponent({ players, matches }: Props) {
-  const standings = computePlayerStandings(players, matches);
+function formatPoints(points: number): string {
+  const rounded = Math.round(points * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+export const PlayersSection = memo(function PlayersSectionComponent({
+  players,
+  matches,
+  eliminatorMatches = [],
+}: Props) {
+  const standings = useMemo(
+    () => computePlayerStandings(players, matches, eliminatorMatches),
+    [players, matches, eliminatorMatches],
+  );
 
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
-
-  const categories = [
-    { id: "all", label: "All" },
-    { id: "M1", label: "M1" },
-    { id: "M2", label: "M2" },
-    { id: "Star", label: "Star" },
-    { id: "Core", label: "Core" },
-    { id: "Dev", label: "Dev" },
-  ];
+  const normalizedSearch = search.trim().toLowerCase();
 
   const filteredStandings = useMemo(() => {
     return standings.filter((s) => {
       const matchesSearch =
-        s.player.name.toLowerCase().includes(search.toLowerCase()) ||
-        (s.player.team ?? "")
-          .toLowerCase()
-          .includes(search.toLowerCase());
+        normalizedSearch.length === 0 ||
+        s.player.name.toLowerCase().includes(normalizedSearch) ||
+        (s.player.team ?? "").toLowerCase().includes(normalizedSearch);
 
-      const matchesCategory =
-        activeCategory === "all" ||
-        s.player.category === activeCategory;
+      const matchesCategory = activeCategory === "all" || s.player.category === activeCategory;
 
       return matchesSearch && matchesCategory;
     });
-  }, [standings, search, activeCategory]);
+  }, [standings, normalizedSearch, activeCategory]);
 
-  // Group filtered standings by category
-  const grouped = new Map<string, typeof standings>();
+  const sortedGroups = useMemo(() => {
+    const grouped = new Map<string, typeof standings>();
 
-  for (const s of filteredStandings) {
-    const cat = s.player.category ?? "Dev";
+    for (const s of filteredStandings) {
+      const cat = s.player.category ?? "Dev";
+      if (!grouped.has(cat)) grouped.set(cat, []);
+      grouped.get(cat)!.push(s);
+    }
 
-    if (!grouped.has(cat)) grouped.set(cat, []);
-
-    grouped.get(cat)!.push(s);
-  }
-
-  const sortedGroups = Array.from(grouped.entries()).sort(
-    (a, b) =>
-      CATEGORY_ORDER.indexOf(a[0]) -
-      CATEGORY_ORDER.indexOf(b[0])
-  );
+    return Array.from(grouped.entries()).sort(
+      (a, b) => CATEGORY_ORDER.indexOf(a[0]) - CATEGORY_ORDER.indexOf(b[0]),
+    );
+  }, [filteredStandings]);
 
   return (
     <div className="space-y-4">
@@ -101,7 +105,7 @@ export const PlayersSection = memo(function PlayersSectionComponent({ players, m
 
       {/* Category Filters */}
       <div className="flex gap-1 p-1 rounded-xl bg-zinc-900/50 ring-1 ring-white/[0.04] overflow-x-auto scrollbar-hide">
-        {categories.map((category) => (
+        {CATEGORIES.map((category) => (
           <button
             key={category.id}
             onClick={() => setActiveCategory(category.id)}
@@ -116,10 +120,7 @@ export const PlayersSection = memo(function PlayersSectionComponent({ players, m
         ))}
       </div>
 
-      <SectionCard
-        title="Player Rankings"
-        icon={<Users className="h-3.5 w-3.5 text-primary/70" />}
-      >
+      <SectionCard title="Player Rankings" icon={<Users className="h-3.5 w-3.5 text-primary/70" />}>
         <div className="space-y-3">
           {filteredStandings.length === 0 && (
             <p className="px-2 py-6 text-center text-[11px] text-muted-foreground">
@@ -164,11 +165,7 @@ export const PlayersSection = memo(function PlayersSectionComponent({ players, m
                             : "bg-white/10 text-muted-foreground"
                         }`}
                       >
-                        {isLeader ? (
-                          <Crown className="h-3.5 w-3.5" />
-                        ) : (
-                          <span>{index + 1}</span>
-                        )}
+                        {isLeader ? <Crown className="h-3.5 w-3.5" /> : <span>{index + 1}</span>}
                       </div>
 
                       {/* Team Logo / Avatar */}
@@ -209,9 +206,7 @@ export const PlayersSection = memo(function PlayersSectionComponent({ players, m
                         </div>
 
                         <p className="text-[9px] text-muted-foreground truncate mt-0.5">
-                          <span className="uppercase tracking-wider">
-                            {s.player.team ?? "—"}
-                          </span>
+                          <span className="uppercase tracking-wider">{s.player.team ?? "—"}</span>
 
                           <span>
                             {" "}
@@ -227,12 +222,12 @@ export const PlayersSection = memo(function PlayersSectionComponent({ players, m
                             s.points > 0
                               ? "text-emerald-400"
                               : s.points < 0
-                              ? "text-red-400"
-                              : "text-foreground"
+                                ? "text-red-400"
+                                : "text-foreground"
                           }`}
                         >
                           {s.points > 0 ? "+" : ""}
-                          {s.points}
+                          {formatPoints(s.points)}
                         </span>
 
                         <span className="text-[8px] uppercase tracking-wider text-muted-foreground">
@@ -247,7 +242,7 @@ export const PlayersSection = memo(function PlayersSectionComponent({ players, m
           ))}
 
           <p className="text-center text-[9px] text-muted-foreground/60 pt-1">
-            Points = sum of game differences across matches played
+            Points = sum of match-night average game differences
           </p>
         </div>
       </SectionCard>

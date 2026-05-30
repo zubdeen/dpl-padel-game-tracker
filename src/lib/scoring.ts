@@ -7,7 +7,9 @@
 //
 // Player points (per match):
 //   - Each player on a team gets (team_games_for − team_games_against).
-//   - Total = sum across all the player's matches.
+//   - Total = sum across all the player's matches / Number of games played.
+
+import { adjustedEliminatorDiffs, type EliminatorMatch } from "@/lib/eliminators";
 
 export type PlayerCategory = "M1" | "M2" | "Star" | "Core" | "Dev";
 
@@ -22,6 +24,8 @@ export type Player = {
 
 export type Match = {
   id: string;
+  team1_name?: string | null;
+  team2_name?: string | null;
   team1_player1_id: string;
   team1_player2_id: string;
   team2_player1_id: string;
@@ -39,7 +43,7 @@ export type PlayerStanding = {
   losses: number;
   gamesFor: number;
   gamesAgainst: number;
-  points: number; // sum of game differences
+  points: number; // average game difference
 };
 
 export type TeamStanding = {
@@ -60,7 +64,7 @@ export function teamPointsFor(
   loserGames: number,
   tie_breaker: boolean,
 ): [number, number] {
-if (tie_breaker) return [2, 1];
+  if (tie_breaker) return [2, 1];
   if (winnerGames >= 6 && loserGames === 0) return [4, 0];
   return [3, 0];
 }
@@ -68,6 +72,7 @@ if (tie_breaker) return [2, 1];
 export function computePlayerStandings(
   players: Player[],
   matches: Match[],
+  eliminatorMatches: EliminatorMatch[] = [],
 ): PlayerStanding[] {
   const byId = new Map(players.map((p) => [p.id, p]));
   const acc = new Map<string, PlayerStanding>();
@@ -115,20 +120,43 @@ export function computePlayerStandings(
     }
   }
 
+  for (const m of eliminatorMatches) {
+    const { team1Diff, team2Diff } = adjustedEliminatorDiffs(m, byId);
+    const rawDiff = m.team1_games - m.team2_games;
+    const t1 = [m.team1_player1_id, m.team1_player2_id];
+    const t2 = [m.team2_player1_id, m.team2_player2_id];
+
+    for (const pid of t1) {
+      const s = ensure(pid);
+      s.matches += 1;
+      s.points += team1Diff;
+      s.gamesFor += m.team1_games;
+      s.gamesAgainst += m.team2_games;
+      if (rawDiff > 0) s.wins += 1;
+      else if (rawDiff < 0) s.losses += 1;
+    }
+    for (const pid of t2) {
+      const s = ensure(pid);
+      s.matches += 1;
+      s.points += team2Diff;
+      s.gamesFor += m.team2_games;
+      s.gamesAgainst += m.team1_games;
+      if (-rawDiff > 0) s.wins += 1;
+      else if (-rawDiff < 0) s.losses += 1;
+    }
+  }
+
   for (const p of players) ensure(p.id);
+  for (const s of acc.values()) {
+    s.points = s.matches > 0 ? s.points / s.matches : 0;
+  }
 
   return [...acc.values()].sort(
-    (a, b) =>
-      b.points - a.points ||
-      b.wins - a.wins ||
-      a.player.name.localeCompare(b.player.name),
+    (a, b) => b.points - a.points || b.wins - a.wins || a.player.name.localeCompare(b.player.name),
   );
 }
 
-export function computeTeamStandings(
-  players: Player[],
-  matches: Match[],
-): TeamStanding[] {
+export function computeTeamStandings(players: Player[], matches: Match[]): TeamStanding[] {
   const teamById = new Map(players.map((p) => [p.id, p.team ?? null]));
   const acc = new Map<string, TeamStanding>();
 
@@ -145,8 +173,8 @@ export function computeTeamStandings(
   for (const p of players) if (p.team) ensure(p.team);
 
   for (const m of matches) {
-    const team1 = teamById.get(m.team1_player1_id) ?? null;
-    const team2 = teamById.get(m.team2_player1_id) ?? null;
+    const team1 = m.team1_name ?? teamById.get(m.team1_player1_id) ?? null;
+    const team2 = m.team2_name ?? teamById.get(m.team2_player1_id) ?? null;
     if (!team1 || !team2 || team1 === team2) continue;
 
     const diff = m.team1_games - m.team2_games;

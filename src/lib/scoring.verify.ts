@@ -7,12 +7,18 @@ import {
   type Match,
   type Player,
 } from "./scoring";
+import {
+  adjustedEliminatorDiffs,
+  computeEliminatorStandings,
+  type EliminatorMatch,
+} from "./eliminators";
 
 const players: Player[] = [
   { id: "p1", name: "Alice", team: "T1" },
   { id: "p2", name: "Bob", team: "T1" },
   { id: "p3", name: "Carol", team: "T2" },
   { id: "p4", name: "Dan", team: "T2" },
+  { id: "p5", name: "Eve", team: "T3" },
 ];
 
 const matches: Match[] = [
@@ -87,9 +93,120 @@ assertEq("Team T1 points", t1.points, 8);
 assertEq("Team T2 points", t2.points, 5);
 assertEq("Team T1 W-L", [t1.wins, t1.losses], [2, 2]);
 
-// Player points: per match diff sum
+// Player points: each match night is averaged, then the nights are added
 // A,B: +4 -3 +6 -1 = 6
 // C,D: -4 +3 -6 +1 = -6
 const ps = computePlayerStandings(players, matches);
 assertEq("Alice points", ps.find((s) => s.player.id === "p1")!.points, 6);
 assertEq("Carol points", ps.find((s) => s.player.id === "p3")!.points, -6);
+
+const matchNightAverageMatches: Match[] = [
+  {
+    id: "n1",
+    team1_player1_id: "p1",
+    team1_player2_id: "p2",
+    team2_player1_id: "p3",
+    team2_player2_id: "p4",
+    team1_games: 6,
+    team2_games: 4,
+    tie_breaker: false,
+    played_at: "2025-02-01T00:00:00Z",
+  },
+  {
+    id: "n2",
+    team1_player1_id: "p1",
+    team1_player2_id: "p2",
+    team2_player1_id: "p3",
+    team2_player2_id: "p4",
+    team1_games: 6,
+    team2_games: 3,
+    tie_breaker: false,
+    played_at: "2025-02-01T00:00:00Z",
+  },
+  {
+    id: "n3",
+    team1_player1_id: "p1",
+    team1_player2_id: "p2",
+    team2_player1_id: "p3",
+    team2_player2_id: "p4",
+    team1_games: 6,
+    team2_games: 4,
+    tie_breaker: false,
+    played_at: "2025-02-08T00:00:00Z",
+  },
+  {
+    id: "n4",
+    team1_player1_id: "p1",
+    team1_player2_id: "p2",
+    team2_player1_id: "p3",
+    team2_player2_id: "p4",
+    team1_games: 6,
+    team2_games: 5,
+    tie_breaker: false,
+    played_at: "2025-02-08T00:00:00Z",
+  },
+];
+const matchNightAverage = computePlayerStandings(players, matchNightAverageMatches);
+assertEq(
+  "Match-night averages are cumulative",
+  matchNightAverage.find((s) => s.player.id === "p1")!.points,
+  4,
+);
+
+const substitutionMatches: Match[] = [
+  {
+    id: "s1",
+    team1_name: "T1",
+    team2_name: "T2",
+    team1_player1_id: "p5",
+    team1_player2_id: "p2",
+    team2_player1_id: "p3",
+    team2_player2_id: "p4",
+    team1_games: 6,
+    team2_games: 4,
+    tie_breaker: false,
+    played_at: "2025-01-05T00:00:00Z",
+  },
+];
+const subst = computeTeamStandings(players, substitutionMatches);
+assertEq("Substitute counts for selected team", subst.find((t) => t.team === "T1")!.points, 3);
+assertEq(
+  "Substitute's roster team does not get match",
+  subst.find((t) => t.team === "T3")!.matches,
+  0,
+);
+
+const eliminatorPlayers: Player[] = [
+  { id: "m1", name: "M1", category: "M1" },
+  { id: "m2", name: "M2", category: "M2" },
+  { id: "star", name: "Star", category: "Star" },
+  { id: "dev", name: "Dev", category: "Dev" },
+];
+const eliminatorMatch: EliminatorMatch = {
+  id: "e1",
+  team1_player1_id: "m1",
+  team1_player2_id: "m2",
+  team2_player1_id: "star",
+  team2_player2_id: "dev",
+  team1_games: 6,
+  team2_games: 4,
+  played_at: "2025-03-01T00:00:00Z",
+};
+const eliminatorById = new Map(eliminatorPlayers.map((p) => [p.id, p]));
+const eliminatorDiffs = adjustedEliminatorDiffs(eliminatorMatch, eliminatorById);
+assertEq("Eliminator stronger pair adjustment", eliminatorDiffs.team1Diff, -3);
+assertEq("Eliminator weaker pair adjustment", eliminatorDiffs.team2Diff, 3);
+
+const combinedStandings = computePlayerStandings(eliminatorPlayers, [], [eliminatorMatch]);
+assertEq(
+  "Eliminators feed overall player standings",
+  combinedStandings.find((s) => s.player.id === "m1")!.points,
+  -3,
+);
+
+const eliminatorStandings = computeEliminatorStandings([eliminatorMatch], eliminatorPlayers);
+assertEq(
+  "Eliminator standings use adjusted points",
+  eliminatorStandings.find((s) => s.playerId === "star")!.gameDiff,
+  3,
+);

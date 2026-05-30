@@ -96,7 +96,7 @@ export const BankingSection = memo(function BankingSectionComponent() {
         <div className="h-px w-12 bg-gradient-to-l from-transparent via-primary/30 to-primary/50" />
       </div>
 
-      {/* Payment Deadline Card */}
+      {/* Payment Deadline Card
       <div className="rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/30 p-4 text-center">
         <div className="flex items-center justify-center gap-2 mb-2">
           <Clock className="h-4 w-4 text-primary" />
@@ -110,7 +110,7 @@ export const BankingSection = memo(function BankingSectionComponent() {
         <p className="text-[9px] text-muted-foreground mt-1">
           All payments must be completed before this date
         </p>
-      </div>
+      </div> */}
 
       {/* Fee Structure */}
       <SectionCard

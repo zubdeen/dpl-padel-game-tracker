@@ -1,6 +1,25 @@
-import { Trophy, Users, Users2, Swords, ShieldCheck, Calendar, Book, Wallet } from "lucide-react";
+import {
+  Trophy,
+  Users,
+  Users2,
+  Swords,
+  ShieldCheck,
+  Calendar,
+  Book,
+  Wallet,
+  CircleHelp,
+} from "lucide-react";
 
-export type TabId = "standings" | "players" | "teams" | "fixtures" | "schedule" | "admin" | "banking" | "rules";
+export type TabId =
+  | "standings"
+  | "players"
+  | "teams"
+  | "fixtures"
+  | "schedule"
+  | "admin"
+  | "banking"
+  | "rules"
+  | "?";
 
 interface NavItem {
   id: TabId;
@@ -16,6 +35,7 @@ const navItems: NavItem[] = [
   { id: "schedule", icon: Calendar, label: "Schedule" },
   { id: "banking", icon: Wallet, label: "Banking" },
   { id: "rules", icon: Book, label: "Rules" },
+  { id: "?", icon: CircleHelp, label: "?" },
 ];
 
 interface NavigationProps {
@@ -24,11 +44,7 @@ interface NavigationProps {
   showAdmin?: boolean;
 }
 
-export function Navigation({
-  activeTab,
-  onTabChange,
-  showAdmin,
-}: NavigationProps) {
+export function Navigation({ activeTab, onTabChange, showAdmin }: NavigationProps) {
   const items: NavItem[] = showAdmin
     ? [...navItems, { id: "admin" as TabId, icon: ShieldCheck, label: "Admin" }]
     : navItems;
@@ -49,10 +65,7 @@ export function Navigation({
                   : "text-muted-foreground hover:text-foreground hover:bg-white/5"
               }`}
             >
-              <item.icon
-                className="h-4 w-4"
-                strokeWidth={isActive ? 2.25 : 1.75}
-              />
+              <item.icon className="h-4 w-4" strokeWidth={isActive ? 2.25 : 1.75} />
             </button>
           );
         })}
