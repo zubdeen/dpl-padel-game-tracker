@@ -84,6 +84,18 @@ const leaguePhaseData: MatchNight[] = [
     sittingOut: ["SMASH MASTERS", "LOS TOROS"],
   },
   {
+    night: 7,
+    date: "12 JUN",
+    dateKey: "2026-06-17",
+    day: "(RESCHEDULED) FRI",
+    time: "18:00",
+    courts: [
+      { court: 1, homeTeam: "SMASH BROS GC", awayTeam: "LOS TOROS" },
+      { court: 2, homeTeam: "VIBORA RAPTORS", awayTeam: "SMASH MASTERS" },
+    ],
+    sittingOut: ["TOKOLOSHE", "ACE DEUCE"],
+  },
+  {
     night: 6,
     date: "14 JUN",
     dateKey: "2026-06-14",
@@ -94,18 +106,6 @@ const leaguePhaseData: MatchNight[] = [
       { court: 2, homeTeam: "VIBORA RAPTORS", awayTeam: "ACE DEUCE" },
     ],
     sittingOut: ["SMASH BROS GC", "LOS TOROS"],
-  },
-  {
-    night: 7,
-    date: "17 JUN",
-    dateKey: "2026-06-17",
-    day: "WED",
-    time: "18:00",
-    courts: [
-      { court: 1, homeTeam: "SMASH BROS GC", awayTeam: "LOS TOROS" },
-      { court: 2, homeTeam: "VIBORA RAPTORS", awayTeam: "SMASH MASTERS" },
-    ],
-    sittingOut: ["TOKOLOSHE", "ACE DEUCE"],
   },
   {
     night: 8,

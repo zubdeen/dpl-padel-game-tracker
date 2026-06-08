@@ -59,7 +59,7 @@ export function ScoringHelpSection() {
                 </div>
               ))}
             </div>
-            <Example text="M1 + M2 has handicap 7. Star + Dev has handicap 2. The fixture difficulty is 5." />
+            <Example text="M1 + M2 has handicap 7. Star + Dev has handicap 2. The difference between the two is the fixture difficulty of 5." />
             <Example text="If M1 + M2 win 6-4, raw difference is +2, then 2 - 5 = -3 each." />
             <Example text="If Star + Dev win 6-3, raw difference is +3, then 3 + 5 = +8 each." />
           </ScoringBlock>
