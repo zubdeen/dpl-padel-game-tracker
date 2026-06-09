@@ -85,9 +85,9 @@ const leaguePhaseData: MatchNight[] = [
   },
   {
     night: 7,
-    date: "12 JUN",
-    dateKey: "2026-06-17",
-    day: "(RESCHEDULED) FRI",
+    date: "11 JUN",
+    dateKey: "2026-06-11",
+    day: "(RESCHEDULED) THURS",
     time: "18:00",
     courts: [
       { court: 1, homeTeam: "SMASH BROS GC", awayTeam: "LOS TOROS" },
