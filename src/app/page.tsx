@@ -18,6 +18,7 @@ import { RulesSection } from "@/components/sections/rules-section";
 import { ScoringHelpSection } from "@/components/sections/scoring-help-section";
 import { fetchEliminatorMatches } from "@/lib/eliminator-data";
 import { fetchMatches } from "@/lib/match-data";
+import { fetchTeamRankings } from "@/lib/team-rankings";
 import type { EliminatorMatch } from "@/lib/eliminators";
 import type { Match, Player } from "@/lib/scoring";
 
@@ -61,6 +62,12 @@ export default function Index() {
     queryFn: fetchMatches,
   });
 
+  const teamRankings = useQuery({
+    queryKey: ["team_rankings"],
+    staleTime: QUERY_STALE_MS,
+    queryFn: fetchTeamRankings,
+  });
+
   const needsPlayers = ["standings", "players", "teams", "fixtures"].includes(activeTab);
   const needsMatches = ["standings", "players", "fixtures"].includes(activeTab);
   const needsEliminators = ["players", "fixtures"].includes(activeTab);
@@ -90,10 +97,12 @@ export default function Index() {
 
   const ps = players.data ?? [];
   const ms = matches.data ?? [];
+  const rankings = teamRankings.data ?? [];
   const ems = eliminatorMatches.data ?? [];
   const isContentLoading =
     (needsPlayers && players.isLoading) ||
     (needsMatches && matches.isLoading) ||
+    (activeTab === "standings" && teamRankings.isLoading) ||
     (needsEliminators && eliminatorMatches.isLoading);
 
   const renderContent = (): ReactNode => {
@@ -105,7 +114,7 @@ export default function Index() {
       case "fixtures":
         return <FixturesSection players={ps} matches={ms} eliminatorMatches={ems} />;
       case "standings":
-        return <StandingsSection players={ps} matches={ms} />;
+        return <StandingsSection players={ps} matches={ms} teamRankings={rankings} />;
       case "banking":
         return <BankingSection />;
       case "schedule":
@@ -118,7 +127,7 @@ export default function Index() {
         return (
           <div className="space-y-4">
             <HeroSection playerCount={ps.length} matchCount={ms.length} />
-            <StandingsSection players={ps} matches={ms} />
+            <StandingsSection players={ps} matches={ms} teamRankings={rankings} />
             <PlayersSection players={ps} matches={ms} eliminatorMatches={ems} />
           </div>
         );

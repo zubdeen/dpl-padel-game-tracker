@@ -29,6 +29,11 @@ import { fetchEliminatorMatches } from "@/lib/eliminator-data";
 import { computeEliminatorStandings, type EliminatorMatch } from "@/lib/eliminators";
 import { teamLogos } from "@/lib/team-logos";
 import {
+  fetchTeamRankings,
+  TEAM_RANKING_STATUS_LABELS,
+  type TeamRankingStatus,
+} from "@/lib/team-rankings";
+import {
   Pencil,
   Trash2,
   ShieldCheck,
@@ -38,6 +43,7 @@ import {
   Crown,
   Star,
   Trophy,
+  ListOrdered,
 } from "lucide-react";
 import type { Match, Player } from "@/lib/scoring";
 
@@ -53,7 +59,7 @@ const QUERY_STALE_MS = 1000 * 60 * 5;
 export default function AdminPage() {
   const { user, isAdmin, loading } = useAuth();
   const router = useRouter();
-  const [adminPanel, setAdminPanel] = useState<"league" | "eliminators">("league");
+  const [adminPanel, setAdminPanel] = useState<"league" | "eliminators" | "rankings">("league");
 
   useEffect(() => {
     if (!loading && !user) router.push("/auth");
@@ -93,8 +99,10 @@ export default function AdminPage() {
               <MatchEntryPanel />
               <MatchListPanel />
             </>
-          ) : (
+          ) : adminPanel === "eliminators" ? (
             <EliminatorsPanel />
+          ) : (
+            <TeamRankingsPanel />
           )}
         </div>
       )}
@@ -121,11 +129,11 @@ function AdminPanelSwitch({
   value,
   onChange,
 }: {
-  value: "league" | "eliminators";
-  onChange: (value: "league" | "eliminators") => void;
+  value: "league" | "eliminators" | "rankings";
+  onChange: (value: "league" | "eliminators" | "rankings") => void;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-1 rounded-xl bg-white/[0.03] ring-1 ring-white/[0.06] p-1">
+    <div className="grid grid-cols-3 gap-1 rounded-xl bg-white/[0.03] ring-1 ring-white/[0.06] p-1">
       <button
         type="button"
         onClick={() => onChange("league")}
@@ -148,7 +156,169 @@ function AdminPanelSwitch({
       >
         Eliminators
       </button>
+      <button
+        type="button"
+        onClick={() => onChange("rankings")}
+        className={`rounded-lg px-2 py-2 text-[9px] font-semibold uppercase tracking-wider transition ${
+          value === "rankings"
+            ? "bg-primary text-primary-foreground"
+            : "text-muted-foreground hover:text-foreground"
+        }`}
+      >
+        Rankings
+      </button>
     </div>
+  );
+}
+
+function TeamRankingsPanel() {
+  const qc = useQueryClient();
+  const players = usePlayers();
+  const rankings = useQuery({
+    queryKey: ["team_rankings"],
+    queryFn: fetchTeamRankings,
+    staleTime: QUERY_STALE_MS,
+  });
+  const teams = useMemo(
+    () =>
+      Array.from(
+        new Set((players.data ?? []).flatMap((player) => (player.team ? [player.team] : []))),
+      ).sort(),
+    [players.data],
+  );
+  const [orderedTeams, setOrderedTeams] = useState<string[]>([]);
+  const [statuses, setStatuses] = useState<Record<string, TeamRankingStatus | null>>({});
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (teams.length === 0 || !rankings.isSuccess || orderedTeams.length > 0) return;
+    const savedTeams = (rankings.data ?? [])
+      .map((ranking) => ranking.team)
+      .filter((team) => teams.includes(team));
+    setOrderedTeams([...savedTeams, ...teams.filter((team) => !savedTeams.includes(team))]);
+    setStatuses(
+      Object.fromEntries((rankings.data ?? []).map((ranking) => [ranking.team, ranking.status])),
+    );
+  }, [rankings.data, rankings.isSuccess, teams, orderedTeams.length]);
+
+  const changePosition = (position: number, team: string) => {
+    setOrderedTeams((current) => {
+      const next = [...current];
+      const oldPosition = next.indexOf(team);
+      if (oldPosition >= 0) {
+        [next[position], next[oldPosition]] = [next[oldPosition], next[position]];
+      } else {
+        next[position] = team;
+      }
+      return next;
+    });
+  };
+
+  const save = async () => {
+    if (orderedTeams.length !== teams.length || new Set(orderedTeams).size !== teams.length) {
+      toast.error("Assign every team to exactly one position.");
+      return;
+    }
+
+    setSaving(true);
+    const { error } = await supabase.from("team_rankings").upsert(
+      orderedTeams.map((team, index) => ({
+        team,
+        position: index + 1,
+        status: statuses[team] ?? null,
+        updated_at: new Date().toISOString(),
+      })),
+      { onConflict: "team" },
+    );
+    setSaving(false);
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Overall team ranking updated");
+      qc.invalidateQueries({ queryKey: ["team_rankings"] });
+    }
+  };
+
+  return (
+    <SectionCard
+      title="Overall Team Ranking"
+      icon={<ListOrdered className="h-4 w-4 text-primary" />}
+    >
+      <p className="text-[10px] text-muted-foreground leading-relaxed mb-4">
+        Choose the team in each position. This list is separate from league points and match
+        results.
+      </p>
+      {players.isLoading || rankings.isLoading ? (
+        <p className="py-6 text-center text-[11px] text-muted-foreground">Loading…</p>
+      ) : (
+        <div className="space-y-2">
+          {teams.map((_, index) => {
+            const selectedTeam = orderedTeams[index];
+            return (
+              <div
+                key={index}
+                className="rounded-lg bg-white/[0.02] ring-1 ring-white/[0.05] p-2.5 space-y-2"
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`w-7 text-center text-[12px] font-bold ${
+                      index === 0 ? "text-primary" : "text-muted-foreground"
+                    }`}
+                  >
+                    {index + 1}
+                  </span>
+                  {selectedTeam && teamLogos[selectedTeam] && (
+                    <img src={teamLogos[selectedTeam]} alt="" className="h-6 w-6 object-contain" />
+                  )}
+                  <Select
+                    value={selectedTeam ?? ""}
+                    onValueChange={(team) => changePosition(index, team)}
+                  >
+                    <SelectTrigger className="flex-1 h-9 text-[10px]">
+                      <SelectValue placeholder="Select team" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {teams.map((team) => (
+                        <SelectItem key={team} value={team}>
+                          {team}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Select
+                  value={selectedTeam ? (statuses[selectedTeam] ?? "none") : "none"}
+                  onValueChange={(status) => {
+                    if (!selectedTeam) return;
+                    setStatuses((current) => ({
+                      ...current,
+                      [selectedTeam]: status === "none" ? null : (status as TeamRankingStatus),
+                    }));
+                  }}
+                  disabled={!selectedTeam}
+                >
+                  <SelectTrigger className="h-9 text-[10px]">
+                    <SelectValue placeholder="Add status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No status</SelectItem>
+                    {Object.entries(TEAM_RANKING_STATUS_LABELS).map(([status, label]) => (
+                      <SelectItem key={status} value={status}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            );
+          })}
+          <Button onClick={save} disabled={saving || teams.length === 0} className="w-full mt-3">
+            {saving ? "Saving…" : "Save ranking"}
+          </Button>
+        </div>
+      )}
+    </SectionCard>
   );
 }
 

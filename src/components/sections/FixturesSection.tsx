@@ -185,27 +185,34 @@ export const FixturesSection = memo(function FixturesSectionComponent({
 
             {dateGroup.eliminatorMatches.map((match) => {
               const team1Win = match.team1_games > match.team2_games;
+              const team1 = playerById.get(match.team1_player1_id)?.team ?? "?";
+              const team2 = playerById.get(match.team2_player1_id)?.team ?? "?";
               return (
                 <div
                   key={match.id}
                   className="rounded-xl bg-white/[0.02] ring-1 ring-white/[0.05] p-3 space-y-2"
                 >
                   <div className="flex items-center justify-between gap-2">
+                    <TeamFixtureHeading team1={team1} team2={team2} />
                     <span className="text-[8px] uppercase tracking-wider text-muted-foreground">
-                      Eliminator
+                      1 game
                     </span>
                   </div>
 
                   <div className="rounded-lg bg-black/10 ring-1 ring-white/[0.04] p-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[9px] font-semibold uppercase tracking-wider text-primary/70">
+                        Final
+                      </span>
+                    </div>
                     <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                      <EliminatorPair
-                        players={[
-                          playerById.get(match.team1_player1_id),
-                          playerById.get(match.team1_player2_id),
-                        ]}
-                        align="right"
-                        winning={team1Win}
-                      />
+                      <div
+                        className={`text-right text-[12px] ${team1Win ? "font-bold text-foreground" : "text-muted-foreground"}`}
+                      >
+                        {playerById.get(match.team1_player1_id)?.name ?? "?"}
+                        <br />
+                        {playerById.get(match.team1_player2_id)?.name ?? "?"}
+                      </div>
 
                       <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-900/60 ring-1 ring-white/5">
                         <span
@@ -225,14 +232,13 @@ export const FixturesSection = memo(function FixturesSectionComponent({
                         </span>
                       </div>
 
-                      <EliminatorPair
-                        players={[
-                          playerById.get(match.team2_player1_id),
-                          playerById.get(match.team2_player2_id),
-                        ]}
-                        align="left"
-                        winning={!team1Win}
-                      />
+                      <div
+                        className={`text-left text-[12px] ${!team1Win ? "font-bold text-foreground" : "text-muted-foreground"}`}
+                      >
+                        {playerById.get(match.team2_player1_id)?.name ?? "?"}
+                        <br />
+                        {playerById.get(match.team2_player2_id)?.name ?? "?"}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -244,82 +250,6 @@ export const FixturesSection = memo(function FixturesSectionComponent({
     </SectionCard>
   );
 });
-
-function EliminatorPair({
-  players,
-  align,
-  winning,
-}: {
-  players: Array<Player | undefined>;
-  align: "left" | "right";
-  winning: boolean;
-}) {
-  return (
-    <div className={`space-y-1 ${align === "right" ? "text-right" : "text-left"}`}>
-      {players.map((player, index) => (
-        <PlayerNameWithLogo
-          key={player?.id ?? index}
-          player={player}
-          align={align}
-          muted={!winning}
-        />
-      ))}
-    </div>
-  );
-}
-
-function PlayerNameWithLogo({
-  player,
-  align,
-  muted = false,
-}: {
-  player?: Player;
-  align: "left" | "right";
-  muted?: boolean;
-}) {
-  const logo = player?.team ? teamLogos[player.team] : null;
-  const content = (
-    <>
-      {logo ? (
-        <img
-          src={logo}
-          alt={player?.team ?? ""}
-          className="h-4 w-4 object-contain flex-shrink-0"
-          loading="lazy"
-        />
-      ) : (
-        <span className="h-4 w-4 rounded-full bg-white/10 flex-shrink-0" />
-      )}
-      <span className="truncate">{player?.name ?? "?"}</span>
-    </>
-  );
-
-  return (
-    <div
-      className={`flex items-center gap-1.5 text-[12px] ${
-        align === "right" ? "justify-end" : "justify-start"
-      } ${muted ? "text-muted-foreground" : "font-bold text-foreground"}`}
-    >
-      {align === "right" ? (
-        <>
-          <span className="truncate">{player?.name ?? "?"}</span>
-          {logo ? (
-            <img
-              src={logo}
-              alt={player?.team ?? ""}
-              className="h-4 w-4 object-contain flex-shrink-0"
-              loading="lazy"
-            />
-          ) : (
-            <span className="h-4 w-4 rounded-full bg-white/10 flex-shrink-0" />
-          )}
-        </>
-      ) : (
-        content
-      )}
-    </div>
-  );
-}
 
 function TeamFixtureHeading({ team1, team2 }: { team1: string; team2: string }) {
   return (
