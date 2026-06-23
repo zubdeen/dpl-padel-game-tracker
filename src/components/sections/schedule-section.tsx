@@ -126,6 +126,7 @@ interface ChampionshipMatch {
   label: string
   homeTeam: string
   awayTeam: string
+  court?: number
   description?: string
 }
 
@@ -148,9 +149,9 @@ const championshipPhaseData: ChampionshipRound[] = [
     day: "SAT",
     time: "18:00",
     matches: [
-      { id: "Q1", label: "Q1", homeTeam: "POS 1", awayTeam: "POS 2" },
+      { id: "Q1", label: "Q1", homeTeam: "TOKOLOSHE", awayTeam: "ACE DEUCE" },
     ],
-    sittingOut: ["POS 3", "POS 4", "POS 5", "POS 6"],
+    sittingOut: ["SMASH BROS GC", "SMASH MASTERS", "LOS TOROS", "VIBORA RAPTORS"],
   },
   {
     name: "ELIMINATOR",
@@ -159,10 +160,10 @@ const championshipPhaseData: ChampionshipRound[] = [
     day: "WED",
     time: "18:00",
     matches: [
-      { id: "E1", label: "E1", homeTeam: "POS 3", awayTeam: "POS 4" },
-      { id: "E2", label: "E2", homeTeam: "POS 5", awayTeam: "POS 6" },
+      { id: "E1", label: "E1", homeTeam: "SMASH BROS GC", awayTeam: "SMASH MASTERS" },
+      { id: "E2", label: "E2", homeTeam: "LOS TOROS", awayTeam: "VIBORA RAPTORS" },
     ],
-    sittingOut: ["POS 1", "POS 2"],
+    sittingOut: ["TOKOLOSHE", "ACE DEUCE"],
   },
   {
     name: "SEMIFINAL",
@@ -171,8 +172,8 @@ const championshipPhaseData: ChampionshipRound[] = [
     day: "FRI",
     time: "18:00",
     matches: [
-      { id: "S1", label: "S1", homeTeam: "WIN Q1", awayTeam: "WIN E1" },
-      { id: "S2", label: "S2", homeTeam: "LOSER Q1", awayTeam: "WIN E2" },
+      { id: "S1", label: "S1", homeTeam: "TOKOLOSHE", awayTeam: "WIN E1" },
+      { id: "S2", label: "S2", homeTeam: "ACE DEUCE", awayTeam: "WIN E2" },
     ],
     sittingOut: ["LOSER E1", "LOSER E2"],
   },
@@ -183,11 +184,10 @@ const championshipPhaseData: ChampionshipRound[] = [
     day: "SAT",
     time: "18:00",
     matches: [
-      { id: "F", label: "FINAL", homeTeam: "WIN S1", awayTeam: "WIN S2", description: "Championship Match" },
-      { id: "3RD", label: "3RD PLACE", homeTeam: "LOSER S1", awayTeam: "LOSER S2", description: "Bronze Match" },
-      { id: "5TH", label: "5TH/6TH", homeTeam: "LOSER E1", awayTeam: "LOSER E2", description: "5th/6th Playoff" },
+      { id: "F", label: "FINAL", homeTeam: "WIN S1", awayTeam: "WIN S2", court: 1, description: "Championship Match" },
+      { id: "5TH", label: "5TH/6TH", homeTeam: "LOSER E1", awayTeam: "LOSER E2", court: 2, description: "5th/6th Playoff" },
     ],
-    sittingOut: [],
+    sittingOut: ["LOSER S1", "LOSER S2"],
   },
 ]
 
@@ -358,7 +358,7 @@ function SittingOutBadges({ teams }: { teams: string[] }) {
 export const ScheduleSection = memo(function ScheduleSectionComponent() {
   const [expandedNight, setExpandedNight] = useState<number | null>(getInitialLeagueNight)
   const [expandedChampionship, setExpandedChampionship] = useState<string | null>(getInitialChampionshipRound)
-  const [activePhase, setActivePhase] = useState<"league" | "championship">("league")
+  const [activePhase, setActivePhase] = useState<"league" | "championship">("championship")
 
   useEffect(() => {
     if (activePhase === "league" && expandedNight != null) {
@@ -546,6 +546,12 @@ export const ScheduleSection = memo(function ScheduleSectionComponent() {
                           </div>
                           {match.description && (
                             <span className="text-[8px] text-muted-foreground/70">{match.description}</span>
+                          )}
+                          {match.court && (
+                            <span className="ml-auto flex items-center gap-1 text-[8px] font-semibold uppercase tracking-widest text-primary/70">
+                              <MapPin className="h-2.5 w-2.5" />
+                              Court {match.court}
+                            </span>
                           )}
                         </div>
 
