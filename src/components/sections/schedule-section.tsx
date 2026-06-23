@@ -209,32 +209,32 @@ function getInitialChampionshipRound() {
   return championshipPhaseData.find((round) => !hasScheduleEnded(round.dateKey))?.name ?? championshipPhaseData.at(-1)?.name ?? null
 }
 
-function StreamLinks() {
-  return (
-    <div className="rounded-xl p-3 bg-zinc-900/50 ring-1 ring-white/[0.04]">
-      <div className="flex items-center gap-1.5 mb-2.5">
-        <Youtube className="h-3.5 w-3.5 text-primary/70" />
-        <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/80">
-          Live Streams
-        </span>
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        {streamLinks.map((stream) => (
-          <a
-            key={stream.court}
-            href={stream.href}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center justify-center gap-1.5 rounded-lg bg-zinc-800/40 px-2.5 py-2 text-[10px] font-semibold text-foreground ring-1 ring-white/[0.05] transition-colors hover:bg-white/[0.05] hover:text-primary"
-          >
-            <span>{stream.court}</span>
-            <ExternalLink className="h-3 w-3 text-primary/70" />
-          </a>
-        ))}
-      </div>
-    </div>
-  )
-}
+// function StreamLinks() {
+//   return (
+//     <div className="rounded-xl p-3 bg-zinc-900/50 ring-1 ring-white/[0.04]">
+//       <div className="flex items-center gap-1.5 mb-2.5">
+//         <Youtube className="h-3.5 w-3.5 text-primary/70" />
+//         <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/80">
+//           Live Streams
+//         </span>
+//       </div>
+//       <div className="grid grid-cols-2 gap-2">
+//         {streamLinks.map((stream) => (
+//           <a
+//             key={stream.court}
+//             href={stream.href}
+//             target="_blank"
+//             rel="noreferrer"
+//             className="flex items-center justify-center gap-1.5 rounded-lg bg-zinc-800/40 px-2.5 py-2 text-[10px] font-semibold text-foreground ring-1 ring-white/[0.05] transition-colors hover:bg-white/[0.05] hover:text-primary"
+//           >
+//             <span>{stream.court}</span>
+//             <ExternalLink className="h-3 w-3 text-primary/70" />
+//           </a>
+//         ))}
+//       </div>
+//     </div>
+//   )
+// }
 
 function TeamLogo({ team, size = "md" }: { team: string; size?: "sm" | "md" | "lg" }) {
   const sizeClasses = {
@@ -405,7 +405,7 @@ export const ScheduleSection = memo(function ScheduleSectionComponent() {
           </button>
         </div>
 
-        <StreamLinks />
+        {/* <StreamLinks /> */}
 
         {/* League Phase */}
         {activePhase === "league" && (

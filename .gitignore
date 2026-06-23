@@ -12,6 +12,7 @@ dist/
 dist-ssr
 .next/
 .npm-cache/
+.pnpm-store/
 .output
 .vinxi
 .tanstack/**
