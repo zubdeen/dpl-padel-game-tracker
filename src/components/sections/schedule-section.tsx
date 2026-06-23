@@ -160,8 +160,8 @@ const championshipPhaseData: ChampionshipRound[] = [
     day: "WED",
     time: "18:00",
     matches: [
-      { id: "E1", label: "E1", homeTeam: "SMASH BROS GC", awayTeam: "SMASH MASTERS" },
-      { id: "E2", label: "E2", homeTeam: "LOS TOROS", awayTeam: "VIBORA RAPTORS" },
+      { id: "E1", label: "E1", homeTeam: "LOS TOROS", awayTeam: "VIBORA RAPTORS" },
+      { id: "E2", label: "E2", homeTeam: "SMASH BROS GC", awayTeam: "SMASH MASTERS" },
     ],
     sittingOut: ["TOKOLOSHE", "ACE DEUCE"],
   },
