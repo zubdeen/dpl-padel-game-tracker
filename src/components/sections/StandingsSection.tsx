@@ -207,7 +207,9 @@ function OverallRankings({ rankings }: { rankings: TeamRanking[] }) {
       )}
       {rankings.map((ranking) => {
         const isEliminationStatus =
-          ranking.status === "playing_e1" || ranking.status === "playing_e2";
+          ranking.status === "playing_e1" ||
+          ranking.status === "playing_e2" ||
+          ranking.status === "eliminated";
         return (
           <div
             key={ranking.team}

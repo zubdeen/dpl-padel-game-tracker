@@ -68,6 +68,7 @@
     "typescript-eslint": "^8.56.1"
   },
   "name": "dpl-padel-game-tracker",
+  "packageManager": "npm@11.6.2",
   "private": true,
   "scripts": {
     "dev": "next dev",

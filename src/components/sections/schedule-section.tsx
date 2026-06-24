@@ -172,10 +172,10 @@ const championshipPhaseData: ChampionshipRound[] = [
     day: "FRI",
     time: "18:00",
     matches: [
-      { id: "S1", label: "S1", homeTeam: "TOKOLOSHE", awayTeam: "WIN E1" },
-      { id: "S2", label: "S2", homeTeam: "ACE DEUCE", awayTeam: "WIN E2" },
+      { id: "S1", label: "S1", homeTeam: "TOKOLOSHE", awayTeam: "SMASH BROS GC" },
+      { id: "S2", label: "S2", homeTeam: "ACE DEUCE", awayTeam: "VIBORA RAPTORS" },
     ],
-    sittingOut: ["LOSER E1", "LOSER E2"],
+    sittingOut: ["LOS TOROS", "SMASH MASTERS"],
   },
   {
     name: "GRAND FINALS",
@@ -185,7 +185,7 @@ const championshipPhaseData: ChampionshipRound[] = [
     time: "18:00",
     matches: [
       { id: "F", label: "FINAL", homeTeam: "WIN S1", awayTeam: "WIN S2", court: 1, description: "Championship Match" },
-      { id: "5TH", label: "5TH/6TH", homeTeam: "LOSER E1", awayTeam: "LOSER E2", court: 2, description: "5th/6th Playoff" },
+      { id: "5TH", label: "5TH/6TH", homeTeam: "LOS TOROS", awayTeam: "SMASH MASTERS", court: 2, description: "5th/6th Playoff" },
     ],
     sittingOut: ["LOSER S1", "LOSER S2"],
   },
